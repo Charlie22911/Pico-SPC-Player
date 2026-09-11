@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Pico-SPC-Player audio wiring</title>
+  <desc id="desc">Connections from the Waveshare RP2350 Touch AMOLED board to a PCM5102A I2S DAC and powered audio equipment.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="context-stroke"/>
+    </marker>
+    <style>
+      .title { font: 700 34px system-ui, sans-serif; fill: #f4f0dc; }
+      .heading { font: 700 25px system-ui, sans-serif; fill: #f4f0dc; }
+      .label { font: 600 19px ui-monospace, monospace; fill: #f4f0dc; }
+      .note { font: 17px system-ui, sans-serif; fill: #aebbd0; }
+      .panel { fill: #193447; stroke: #8bd3ff; stroke-width: 3; rx: 18; }
+      .pin { fill: #0a111d; stroke: #63768d; stroke-width: 2; rx: 7; }
+      .wire { fill: none; stroke-width: 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="650" fill="#070d18" rx="18"/>
+  <text x="60" y="64" class="title">PCM5102A audio wiring</text>
+
+  <rect x="60" y="110" width="350" height="410" class="panel"/>
+  <text x="235" y="155" class="heading" text-anchor="middle">Waveshare RP2350</text>
+  <text x="235" y="186" class="note" text-anchor="middle">Touch AMOLED 2.41</text>
+  <g class="label">
+    <rect x="245" y="225" width="130" height="42" class="pin"/><text x="310" y="253" text-anchor="middle">GP26</text>
+    <rect x="245" y="295" width="130" height="42" class="pin"/><text x="310" y="323" text-anchor="middle">GP27</text>
+    <rect x="245" y="365" width="130" height="42" class="pin"/><text x="310" y="393" text-anchor="middle">GP28</text>
+    <rect x="245" y="435" width="130" height="42" class="pin"/><text x="310" y="463" text-anchor="middle">GND</text>
+  </g>
+
+  <rect x="760" y="110" width="380" height="410" class="panel"/>
+  <text x="950" y="155" class="heading" text-anchor="middle">PCM5102A DAC</text>
+  <g class="label">
+    <rect x="790" y="225" width="130" height="42" class="pin"/><text x="855" y="253" text-anchor="middle">BCK</text>
+    <rect x="790" y="295" width="130" height="42" class="pin"/><text x="855" y="323" text-anchor="middle">LRCK</text>
+    <rect x="790" y="365" width="130" height="42" class="pin"/><text x="855" y="393" text-anchor="middle">DIN</text>
+    <rect x="790" y="435" width="130" height="42" class="pin"/><text x="855" y="463" text-anchor="middle">GND + SCK</text>
+  </g>
+  <text x="1000" y="246" class="note">bit clock</text>
+  <text x="1000" y="316" class="note">left/right clock</text>
+  <text x="1000" y="386" class="note">serial audio</text>
+  <text x="1000" y="456" class="note">common ground</text>
+
+  <path d="M375 246 C520 246, 650 246, 790 246" class="wire" stroke="#42a5ff"/>
+  <path d="M375 316 C520 316, 650 316, 790 316" class="wire" stroke="#4fe386"/>
+  <path d="M375 386 C520 386, 650 386, 790 386" class="wire" stroke="#ffd44d"/>
+  <path d="M375 456 C520 456, 650 456, 790 456" class="wire" stroke="#c5ced9"/>
+
+  <rect x="60" y="555" width="1080" height="55" fill="#101d2a" stroke="#39556d" stroke-width="2" rx="12"/>
+  <text x="90" y="589" class="note">GY-PCM5102A straps: H1=L, H2=L, H3=H, H4=L. Connect analog output to powered speakers or an amplifier.</text>
+</svg>

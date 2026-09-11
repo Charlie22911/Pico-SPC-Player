@@ -47,11 +47,25 @@ from the initial touch cancels the tap.
 - **Library** browses game folders and tracks with three finger-sized rows plus Back/Prev/Next.
 - **Settings** shows clock, visualizer rate, and live diagnostics.
 
+## Interface gallery
+
+| Player dashboard | View selector |
+| --- | --- |
+| ![Player dashboard](images/player.png) | ![View selector](images/view-menu.png) |
+| Track library | Track metadata |
+| ![Track library](images/library.png) | ![Track metadata](images/track.png) |
+| Voice overview | Voice details |
+| ![Voice overview](images/voices.png) | ![Voice details](images/voice-detail.png) |
+| DSP summary | DSP register matrix |
+| ![DSP summary](images/dsp.png) | ![DSP register matrix](images/dsp-registers.png) |
+| Settings and diagnostics | ARAM Activity |
+| ![Settings and diagnostics](images/settings.png) | ![ARAM Activity map](images/aram-activity.png) |
+
 ## Visualizer rate
 
-Tap the **Visualizer 30 Hz/60 Hz** row in Settings to switch rates. The selected rate controls
-snapshot publication and UI model updates. Display transfer time and available audio headroom can
-cause visual updates to be dropped; audio remains the priority.
+The firmware starts at 60 Hz. Tap the **Visualizer 30 Hz/60 Hz** row in Settings to switch rates.
+The selected rate controls snapshot publication and UI model updates. Display transfer time and
+available audio headroom can cause visual updates to be dropped; audio remains the priority.
 
 ## Settings diagnostics
 

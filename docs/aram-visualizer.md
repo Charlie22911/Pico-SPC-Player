@@ -4,6 +4,10 @@ The dedicated ARAM page has two modes. Tap the map to switch between **Activity*
 Both modes display the complete 64 KiB SPC700 address space. Address `$HHLL` maps to pixel
 `(LL, HH)`, placing each 256-byte page on one horizontal row.
 
+| Activity | Data |
+| --- | --- |
+| ![ARAM Activity view](images/aram-activity.png) | ![ARAM Data heatmap](images/aram-data.png) |
+
 ## Activity mode
 
 The emulator is built with `SPC_ENABLE_ARAM_VISUALIZER=1`. Optional hooks mark:

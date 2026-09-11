@@ -5,6 +5,12 @@ RP2350 Touch AMOLED 2.41. It plays SPC files from a FAT-formatted microSD card t
 external PCM5102A I2S DAC and presents a finger-operated interface with live ARAM, voice, and
 DSP views.
 
+<p align="center">
+  <img src="docs/images/player.png" width="30%" alt="Pico-SPC-Player playback dashboard">
+  <img src="docs/images/library.png" width="30%" alt="Pico-SPC-Player track library">
+  <img src="docs/images/aram-data.png" width="30%" alt="Pico-SPC-Player ARAM Data heatmap">
+</p>
+
 ## Supported features
 
 The firmware supports software SPC700/S-DSP playback, read-only SD library browsing, touch
@@ -69,6 +75,7 @@ cmake --build build-embedded --target pico_spc_player
 - [Architecture and source map](docs/architecture.md)
 - [ARAM visualizer](docs/aram-visualizer.md)
 - [Troubleshooting](docs/troubleshooting.md)
+- [Interface gallery](docs/user-guide.md#interface-gallery)
 - [Contributing](CONTRIBUTING.md)
 
 ## Licensing

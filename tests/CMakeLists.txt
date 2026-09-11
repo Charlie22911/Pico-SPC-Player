@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
-project(PicoSPCPlayerHostTests LANGUAGES C)
+project(PicoSPCPlayerHostTests LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_testing()
 option(ENABLE_SANITIZERS "Enable address/undefined sanitizers on host" OFF)
 add_executable(audio_test audio_test.c
@@ -60,7 +62,22 @@ target_compile_options(storage_test PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
 add_test(NAME storage_contract COMMAND storage_test)
 
+add_library(gui_preview_backend STATIC
+    ../src/spc/software_spc_backend.cpp
+    ../src/spc/spc_snapshot.c
+    ../third_party/snes_spc/SNES_SPC.cpp
+    ../third_party/snes_spc/SNES_SPC_misc.cpp
+    ../third_party/snes_spc/SNES_SPC_state.cpp
+    ../third_party/snes_spc/SPC_DSP.cpp)
+target_include_directories(gui_preview_backend PUBLIC ../src/spc ../third_party/snes_spc)
+target_compile_definitions(gui_preview_backend PUBLIC SPC_ENABLE_ARAM_VISUALIZER=1)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(gui_preview_backend PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions;-fno-rtti>)
+endif()
+
 add_executable(gui_preview gui_preview.c
+    ../src/spc/spc_metadata.c
     ../src/ui/ui.c ../src/ui/ui_pages.c ../src/ui/ui_aram.c ../src/ui/ui_dsp.c ../src/ui/ui_draw.c ../src/ui/ui_font.c
     ../src/ui/ui_layout.c ../src/ui/ui_library.c ../src/ui/ui_touch.c
     ../src/ui/ui_marquee.c
@@ -71,3 +88,4 @@ add_executable(gui_preview gui_preview.c
     ../src/player/player_commands.c)
 target_include_directories(gui_preview PRIVATE ../src)
 target_compile_options(gui_preview PRIVATE -Wall -Wextra -Werror -Wconversion -Wshadow)
+target_link_libraries(gui_preview PRIVATE gui_preview_backend)

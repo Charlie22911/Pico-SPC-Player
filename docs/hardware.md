@@ -5,6 +5,8 @@
 The firmware targets the Waveshare RP2350 Touch AMOLED 2.41 with its integrated 450x600 display
 and FT6336U touch controller.
 
+![RP2350 to PCM5102A wiring](images/wiring.svg)
+
 ## PCM5102A audio
 
 | Function | RP2350 GPIO |
