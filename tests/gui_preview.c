@@ -200,7 +200,9 @@ int main(int argc, char **argv) {
     aram_view_t aram_view;
     aram_view_init(&aram_view);
     aram_view_apply(&aram_view, &activity_snapshot);
-    if (screen == (unsigned long)UI_SCREEN_ARAM && variant != 0u)
+    if ((screen == (unsigned long)UI_SCREEN_PLAYER ||
+         screen == (unsigned long)UI_SCREEN_ARAM) &&
+        variant != 0u)
         apply_aram_data(&aram_view, spc_image != NULL ? aram_data : NULL);
 
     spc_library_catalog_t catalog;
@@ -264,7 +266,7 @@ int main(int argc, char **argv) {
     ui_t ui;
     ui_init(&ui, &model);
     ui.screen = (ui_screen_t)screen;
-    if (ui.screen == UI_SCREEN_ARAM && variant != 0u) {
+    if ((ui.screen == UI_SCREEN_PLAYER || ui.screen == UI_SCREEN_ARAM) && variant != 0u) {
         ui.aram_data_mode = true;
         ui.aram_mode_request = 1u;
     } else if (ui.screen == UI_SCREEN_DSP) {
@@ -309,9 +311,15 @@ int main(int argc, char **argv) {
     for (int y = 599; y >= 0; --y) {
         for (int x = 0; x < 450; ++x) {
             const uint8_t index = ui_canvas_get_pixel(&canvas, (uint16_t)x, (uint16_t)y);
-            const bool data_palette =
-                ui.screen == UI_SCREEN_ARAM && ui.aram_data_mode &&
-                (inside(UI_ARAM_LARGE_MAP, x, y) || inside(UI_ARAM_DATA_SCALE, x, y));
+            const ui_rect_t data_map =
+                ui.screen == UI_SCREEN_PLAYER ? UI_RECT_PLAYER_ARAM_MAP : UI_ARAM_LARGE_MAP;
+            const ui_rect_t data_scale = ui.screen == UI_SCREEN_PLAYER
+                                             ? UI_RECT_PLAYER_ARAM_DATA_SCALE
+                                             : UI_ARAM_DATA_SCALE;
+            const bool data_palette = ui.aram_data_mode &&
+                                      (ui.screen == UI_SCREEN_PLAYER ||
+                                       ui.screen == UI_SCREEN_ARAM) &&
+                                      (inside(data_map, x, y) || inside(data_scale, x, y));
             const uint16_t pixel =
                 data_palette ? ui_aram_data_palette_rgb565[index] : ui_palette_rgb565[index];
             fputc((int)((pixel & 31u) * 255u / 31u), output);

@@ -1,12 +1,15 @@
 # ARAM visualizer
 
-The dedicated ARAM page has two modes. Tap the map to switch between **Activity** and **Data**.
-Both modes display the complete 64 KiB SPC700 address space. Address `$HHLL` maps to pixel
-`(LL, HH)`, placing each 256-byte page on one horizontal row.
+The compact Player map and dedicated ARAM page each have two modes. Tap either map to switch
+between **Activity** and **Data**. Both modes display the complete 64 KiB SPC700 address space.
+Address `$HHLL` maps to pixel `(LL, HH)`, placing each 256-byte page on one horizontal row. The
+compact map returns to Activity mode when another screen is opened.
 
 | Activity | Data |
 | --- | --- |
 | ![ARAM Activity view](images/aram-activity.png) | ![ARAM Data heatmap](images/aram-data.png) |
+
+![Compact ARAM Data heatmap on the Player dashboard](images/player-data.png)
 
 ## Activity mode
 

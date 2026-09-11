@@ -61,6 +61,8 @@ extern const ui_rect_t UI_RECT_HEADER_BUTTON;
 extern const ui_rect_t UI_RECT_VOLUME;
 extern const ui_rect_t UI_RECT_PLAY_PAUSE;
 extern const ui_rect_t UI_RECT_RESTART;
+extern const ui_rect_t UI_RECT_PLAYER_ARAM_MAP;
+extern const ui_rect_t UI_RECT_PLAYER_ARAM_DATA_SCALE;
 
 ui_target_t ui_hit_test(ui_screen_t screen, uint16_t x, uint16_t y);
 ui_rect_t ui_target_rect(ui_screen_t screen, ui_target_t target);

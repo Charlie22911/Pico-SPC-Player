@@ -266,14 +266,20 @@ static void start_next_ui_transfer(ui_dirty_queue_t *queue, const ui_t *ui, ui_c
         canvas->pixels + (size_t)dirty.rect.y * canvas->stride_bytes + (uint16_t)dirty.rect.x / 2u;
     display_palette_region_t secondary_regions[DISPLAY_PALETTE_REGION_CAPACITY];
     uint8_t secondary_region_count = 0u;
-    if (ui->screen == UI_SCREEN_ARAM && ui->aram_data_mode) {
-        secondary_regions[secondary_region_count++] = (display_palette_region_t){
-            (uint16_t)UI_ARAM_DATA_SCALE.x, (uint16_t)UI_ARAM_DATA_SCALE.y,
-            (uint16_t)UI_ARAM_DATA_SCALE.width, (uint16_t)UI_ARAM_DATA_SCALE.height};
+    if (ui->aram_data_mode &&
+        (ui->screen == UI_SCREEN_PLAYER || ui->screen == UI_SCREEN_ARAM)) {
+        const ui_rect_t data_scale = ui->screen == UI_SCREEN_PLAYER
+                                         ? UI_RECT_PLAYER_ARAM_DATA_SCALE
+                                         : UI_ARAM_DATA_SCALE;
+        const ui_rect_t data_map =
+            ui->screen == UI_SCREEN_PLAYER ? UI_RECT_PLAYER_ARAM_MAP : UI_ARAM_LARGE_MAP;
+        secondary_regions[secondary_region_count++] =
+            (display_palette_region_t){(uint16_t)data_scale.x, (uint16_t)data_scale.y,
+                                       (uint16_t)data_scale.width, (uint16_t)data_scale.height};
         if (ui_aram_data_ready(ui)) {
-            secondary_regions[secondary_region_count++] = (display_palette_region_t){
-                (uint16_t)UI_ARAM_LARGE_MAP.x, (uint16_t)UI_ARAM_LARGE_MAP.y,
-                (uint16_t)UI_ARAM_LARGE_MAP.width, (uint16_t)UI_ARAM_LARGE_MAP.height};
+            secondary_regions[secondary_region_count++] =
+                (display_palette_region_t){(uint16_t)data_map.x, (uint16_t)data_map.y,
+                                           (uint16_t)data_map.width, (uint16_t)data_map.height};
         }
     }
     const bool started =
@@ -384,7 +390,8 @@ _Noreturn void ui_runtime_run(const ui_runtime_config_t *config) {
             if (aram_data_acquire(&visuals->data, &data_snapshot)) {
                 const uint32_t current_generation =
                     player_status_read(config->player_status).generation;
-                if (ui.screen == UI_SCREEN_ARAM && ui.aram_data_mode &&
+                if ((ui.screen == UI_SCREEN_PLAYER || ui.screen == UI_SCREEN_ARAM) &&
+                    ui.aram_data_mode &&
                     data_snapshot.request == ui.aram_mode_request &&
                     data_snapshot.generation == current_generation) {
                     aram_view_apply_data(&ui_aram_view, &data_snapshot);

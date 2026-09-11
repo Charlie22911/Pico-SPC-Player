@@ -22,6 +22,15 @@ static void test_touch_targets_and_cancellation(void) {
     assert(ui_hit_test(UI_SCREEN_PLAYER, 302, 488) == UI_TARGET_RESTART);
     assert(ui_hit_test(UI_SCREEN_PLAYER, 338, 0) == UI_TARGET_VIEW);
     assert(ui_hit_test(UI_SCREEN_PLAYER, 437, 99) == UI_TARGET_VIEW);
+    const ui_rect_t player_aram_map =
+        ui_target_rect(UI_SCREEN_PLAYER, UI_TARGET_ARAM_MAP);
+    assert(player_aram_map.x == 14);
+    assert(player_aram_map.y == 126);
+    assert(player_aram_map.width == 256);
+    assert(player_aram_map.height == 256);
+    assert(ui_hit_test(UI_SCREEN_PLAYER, 14, 126) == UI_TARGET_ARAM_MAP);
+    assert(ui_hit_test(UI_SCREEN_PLAYER, 269, 381) == UI_TARGET_ARAM_MAP);
+    assert(ui_hit_test(UI_SCREEN_PLAYER, 270, 381) == UI_TARGET_NONE);
     assert(ui_hit_test(UI_SCREEN_ARAM, 338, 0) == UI_TARGET_CLOSE);
     assert(ui_hit_test(UI_SCREEN_ARAM, 449, 599) == UI_TARGET_NONE);
 
@@ -72,8 +81,29 @@ static void test_screen_routing_and_visual_rate(void) {
     ui_init(&ui, &model);
     assert(ui.screen == UI_SCREEN_PLAYER);
 
+    (void)ui_handle_touch(&ui, 100u, 200u, true, &commands);
+    const ui_dirty_t aram_dirty = ui_handle_touch(&ui, 100u, 200u, false, &commands);
+    assert(ui.aram_data_mode);
+    assert(aram_dirty.changed && !aram_dirty.full);
+    assert(aram_dirty.rect.y <= 102);
+    assert((int32_t)aram_dirty.rect.y + aram_dirty.rect.height >= 410);
+    uint32_t aram_request = 0u;
+    assert(ui_take_aram_mode_request(&ui, &aram_request));
+    assert((aram_request & 1u) != 0u);
+    tap(&ui, &commands, 100u, 200u);
+    assert(!ui.aram_data_mode);
+    assert(ui_take_aram_mode_request(&ui, &aram_request));
+    assert((aram_request & 1u) == 0u);
+
+    tap(&ui, &commands, 100u, 200u);
+    assert(ui.aram_data_mode);
+    assert(ui_take_aram_mode_request(&ui, &aram_request));
+
     tap(&ui, &commands, 380u, 50u);
     assert(ui.screen == UI_SCREEN_VIEW_MENU);
+    assert(!ui.aram_data_mode);
+    assert(ui_take_aram_mode_request(&ui, &aram_request));
+    assert((aram_request & 1u) == 0u);
     tap(&ui, &commands, 100u, 170u);
     assert(ui.screen == UI_SCREEN_ARAM);
     tap(&ui, &commands, 380u, 50u);

@@ -192,9 +192,15 @@ static void request_aram_mode(ui_t *ui, bool data_mode) {
     ui->aram_mode_request_pending = true;
 }
 
+static void leave_player_aram_data(ui_t *ui) {
+    if (ui->screen == UI_SCREEN_PLAYER && ui->aram_data_mode)
+        request_aram_mode(ui, false);
+}
+
 static bool activate(ui_t *ui, ui_target_t target, player_command_queue_t *commands) {
     switch (target) {
     case UI_TARGET_VIEW:
+        leave_player_aram_data(ui);
         ui->screen = UI_SCREEN_VIEW_MENU;
         return true;
     case UI_TARGET_CLOSE:
@@ -205,6 +211,7 @@ static bool activate(ui_t *ui, ui_target_t target, player_command_queue_t *comma
     case UI_TARGET_VOLUME:
         if (ui->screen == UI_SCREEN_ARAM)
             request_aram_mode(ui, false);
+        leave_player_aram_data(ui);
         ui->screen = UI_SCREEN_VOLUME;
         return true;
     case UI_TARGET_ARAM:
@@ -280,6 +287,7 @@ static bool activate(ui_t *ui, ui_target_t target, player_command_queue_t *comma
             if (ui->model.library.show_embedded) {
                 (void)enqueue(ui, commands, (player_command_t){PLAYER_COMMAND_LOAD_EMBEDDED, 0u});
             } else {
+                leave_player_aram_data(ui);
                 ui->screen = UI_SCREEN_LIBRARY;
                 return true;
             }
@@ -434,6 +442,9 @@ ui_dirty_t ui_handle_touch(ui_t *ui, uint16_t x, uint16_t y, bool pressed,
 
     ui->pressed_target = UI_TARGET_NONE;
     const bool screen_changed = activate(ui, event.target, commands);
+    if (event.target == UI_TARGET_ARAM_MAP) {
+        return (ui_dirty_t){true, false, {0, 100, 450, 310}};
+    }
     return (ui_dirty_t){true, screen_changed,
                         screen_changed ? (ui_rect_t){0, 0, 450, 600} : old_rect};
 }

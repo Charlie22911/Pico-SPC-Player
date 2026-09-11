@@ -7,6 +7,8 @@ const ui_rect_t UI_RECT_HEADER_BUTTON = {338, 8, 100, 84};
 const ui_rect_t UI_RECT_VOLUME = {12, 488, 136, 100};
 const ui_rect_t UI_RECT_PLAY_PAUSE = {157, 488, 136, 100};
 const ui_rect_t UI_RECT_RESTART = {302, 488, 136, 100};
+const ui_rect_t UI_RECT_PLAYER_ARAM_MAP = {14, 126, 256, 256};
+const ui_rect_t UI_RECT_PLAYER_ARAM_DATA_SCALE = {14, 388, 256, 12};
 
 static const ui_rect_t close_rect = {338, 0, 100, 100};
 static const ui_rect_t menu_rects[6] = {
@@ -86,6 +88,8 @@ ui_rect_t ui_target_rect(ui_screen_t screen, ui_target_t target) {
     }
     if (screen == UI_SCREEN_SETTINGS && target == UI_TARGET_VISUALIZER_RATE)
         return visualizer_rate_rect;
+    if (screen == UI_SCREEN_PLAYER && target == UI_TARGET_ARAM_MAP)
+        return UI_RECT_PLAYER_ARAM_MAP;
     if (screen == UI_SCREEN_ARAM && target == UI_TARGET_ARAM_MAP)
         return (ui_rect_t){14, 126, 422, 310};
     return (ui_rect_t){0, 0, 0, 0};
@@ -149,6 +153,8 @@ ui_target_t ui_hit_test(ui_screen_t screen, uint16_t x, uint16_t y) {
     }
     if (screen == UI_SCREEN_SETTINGS && contains(visualizer_rate_rect, x, y))
         return UI_TARGET_VISUALIZER_RATE;
+    if (screen == UI_SCREEN_PLAYER && contains(UI_RECT_PLAYER_ARAM_MAP, x, y))
+        return UI_TARGET_ARAM_MAP;
     if (screen == UI_SCREEN_ARAM && contains((ui_rect_t){14, 126, 422, 310}, x, y))
         return UI_TARGET_ARAM_MAP;
     return UI_TARGET_NONE;

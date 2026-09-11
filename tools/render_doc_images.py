@@ -14,6 +14,7 @@ from pathlib import Path
 
 SCREENS = (
     ("player.png", 0, 0),
+    ("player-data.png", 0, 1),
     ("view-menu.png", 1, 0),
     ("aram-activity.png", 2, 0),
     ("aram-data.png", 2, 1),

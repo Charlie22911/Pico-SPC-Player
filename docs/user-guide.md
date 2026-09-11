@@ -36,8 +36,9 @@ from the initial touch cancels the tap.
 
 ## Views
 
-- **Player** shows a compact ARAM Activity map, eight voice meters, playback time, volume, and
-  stereo levels.
+- **Player** shows a compact ARAM map, eight voice meters, playback time, volume, and stereo
+  levels. Tap the map to switch between Activity and byte-value Data modes. The compact map
+  returns to Activity mode when another screen is opened.
 - **ARAM** fills the main content area with all 65,536 addresses. Tap the map to switch between
   Activity and byte-value Data modes. Close returns to the Player view.
 - **Voices** shows voices 1-4 or 5-8. Tap a voice card for pitch, envelope, BRR, volume, and DSP
@@ -52,6 +53,8 @@ from the initial touch cancels the tap.
 | Player dashboard | View selector |
 | --- | --- |
 | ![Player dashboard](images/player.png) | ![View selector](images/view-menu.png) |
+| Player ARAM Data | Full-screen ARAM Data |
+| ![Player ARAM Data](images/player-data.png) | ![Full-screen ARAM Data](images/aram-data.png) |
 | Track library | Track metadata |
 | ![Track library](images/library.png) | ![Track metadata](images/track.png) |
 | Voice overview | Voice details |
