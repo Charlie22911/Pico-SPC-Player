@@ -48,6 +48,26 @@ from the initial touch cancels the tap.
 - **Library** browses game folders and tracks with three finger-sized rows plus Back/Prev/Next.
 - **Settings** shows clock, visualizer rate, and live diagnostics.
 
+## Reading the Player dashboard
+
+- **Track header** shows the ID666 track title and game name. The cyan status line reports the
+  playback state and whether the track came from the SD card or private embedded fallback.
+- **ARAM map** represents all 65,536 audio-RAM addresses. Each horizontal row corresponds to one
+  256-byte page. Tap the map to switch between recent Activity and byte-value Data modes.
+- **Voices 1-8** represents the eight S-DSP sampled voices. In each meter, the green fill is the
+  voice's current envelope level from `0x000` through `0x7FF`. The thin orange line is the voice's
+  pitch-register value positioned across its `0x0000` through `0x3FFF` range. These meters expose
+  synthesizer state; they are not eight conventional audio-volume meters.
+- **Elapsed / INF** shows playback time. `INF` indicates that the player continues playback
+  indefinitely rather than applying SPC duration or fade tags.
+- **VOL** shows the selected master-volume step as a percentage.
+- **L / R** bars show recent left and right PCM peak levels after the voices have been mixed.
+- **Volume, Pause/Play, and Restart** provide the primary transport controls. **View** opens the
+  detailed visualizers, track information, library, and settings.
+
+For background on the SPC700, S-DSP, ARAM, and SPC file format, see
+[SNES audio and SPC files](snes-audio.md).
+
 ## Interface gallery
 
 | Player dashboard | View selector |

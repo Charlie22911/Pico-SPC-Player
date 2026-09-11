@@ -72,6 +72,7 @@ cmake --build build-embedded --target pico_spc_player
 - [Building and flashing](docs/building.md)
 - [Hardware and wiring](docs/hardware.md)
 - [User guide](docs/user-guide.md)
+- [SNES audio and SPC file overview](docs/snes-audio.md)
 - [Architecture and source map](docs/architecture.md)
 - [ARAM visualizer](docs/aram-visualizer.md)
 - [Troubleshooting](docs/troubleshooting.md)
