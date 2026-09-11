@@ -1,0 +1,19 @@
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+; SPDX-License-Identifier: BSD-3-Clause
+; Derived from pico-extras audio_i2s.pio; provenance is recorded in README.md.
+; Autopull 32, shift left. Each channel uses one 32-bit slot.
+.program i2s_tx
+.side_set 2
+.wrap_target
+bitloop1:
+    out pins, 1      side 0b10
+    jmp x-- bitloop1 side 0b11
+    out pins, 1      side 0b00
+public entry_point:
+    set x, 30        side 0b01
+bitloop0:
+    out pins, 1      side 0b00
+    jmp x-- bitloop0 side 0b01
+    out pins, 1      side 0b10
+    set x, 30        side 0b11
+.wrap

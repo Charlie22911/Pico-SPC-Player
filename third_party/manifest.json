@@ -1,0 +1,72 @@
+{
+  "components": [
+    {
+      "name": "snes_spc",
+      "source": "https://github.com/blarggs-audio-libraries/snes_spc",
+      "commit": "ec8ee2bbe30451614c1d02a83f7af1c97d497d45",
+      "license": "LGPL-2.1-or-later",
+      "localPath": "third_party/snes_spc",
+      "localModifications": "Copy-only DSP and voice snapshots plus compile-time optional SPC700/S-DSP ARAM activity and byte-value heatmap hooks.",
+      "files": {
+        "SNES_SPC.cpp": "a0cc8304269723321fe9e5b04008e9ec80a1f8eba35e8e35c28196f0085cc996",
+        "SNES_SPC_misc.cpp": "797e2c83386386a47907c5c8bb7db1205cdc86a7dbd9475a47450e73d41313b1",
+        "SNES_SPC_state.cpp": "6af18978d82617f12b9830b87e06dd6c27f772b78de9d18a8ebbdf38d93309d2",
+        "SNES_SPC.h": "22bb36dc656a09c31bf91279dd0c56bf9ee40d94a2bc24634f09ed68259f1fff",
+        "SPC_CPU.h": "7808915eaefd260096ea77ffcd469a7e29a7d00e582b5763a5a9d3962dfaaeb9",
+        "SPC_DSP.cpp": "ece9f938080f1c015a713947919c53795987e42131564c0a7e29f5622bdaf495",
+        "SPC_DSP.h": "3d03bd22699bfd0703550f3bf6504424f03a31e942fc82bf624688e7e7ac0e5b",
+        "blargg_common.h": "4bc17a19fe46de2860868d3f88c037aee718b4dedc61450a28de3d1336053dba",
+        "blargg_config.h": "b318cfcd2828719d8e3435e4972bc75ba82697c2cc6b8d291130d66d7b6904b8",
+        "blargg_endian.h": "97062e15b46e1347a4fc2e95fd131bcb89c1b8947b28d20a27c1f342a387d637",
+        "blargg_source.h": "bd6b376d6d9b1bccce3b89e915b1ad9a6fede7d43b273258bfa13c3855fb1a6a",
+        "LICENSE": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331",
+        "license.txt": "5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a"
+      }
+    },
+    {
+      "name": "FatFs",
+      "source": "http://elm-chan.org/fsw/ff/",
+      "commit": "R0.15-patch1",
+      "license": "FatFs permissive license",
+      "localPath": "third_party/fatfs",
+      "localModifications": "Configured for one read-only FAT12/16/32 volume, 512-byte sectors, code page 437, bounded long filenames, and no exFAT.",
+      "files": {
+        "ff.c": "277dd6cb807135e6cc3c5d16525e9881275c2754f36b40446c3941c6b1bf8675",
+        "ff.h": "7bddebd3db5ced9f78d925ac9817bb4b6fc33709aa3800b408895805fffe5eee",
+        "ffconf.h": "c862d980eae60b743a067e66b106c67e19acbbffaea1883e3b0280776254e18f",
+        "diskio.h": "901d6670aeea2c4fcc6e1c2f38866e142069627a95c9b023eb7a4bf991e47a04",
+        "ffunicode.c": "6cd4dc4a664386ebd108e56d367582c35f005fc20381486366b5d77ac58119bd"
+      }
+    },
+    {
+      "name": "Waveshare RP2350 Touch AMOLED drivers",
+      "source": "https://github.com/Charlie22911/RP2350-Remote-Display",
+      "commit": "813e35c75544e116bd1541e1dd09e0d9cba484f6",
+      "license": "MIT-style Waveshare notice",
+      "localPath": "third_party/waveshare",
+      "localModifications": "Integrated with Core 1 display ownership, asynchronous DMA transfer, and indexed-palette expansion.",
+      "files": {
+        "amoled/AMOLED_2in41.c": "6de2be6b1143fc3bcb38bfb05e73419c2499f65fa772d9b1c3bf67b75c675fd0",
+        "amoled/AMOLED_2in41.h": "07ad418affc7941d25dfb6bf6baa24c935cf73b822c3b6e23296c58b8b85e875",
+        "board/DEV_Config.c": "fc65daa855c80eca6c7aa93c19330724067f9a37b1130303e40fde28edd55ea2",
+        "board/DEV_Config.h": "d8dfb1e414565d84b54ec26cfc14e33be641846f1ddb929864cb763e77a43f47",
+        "qspi/qspi_pio.c": "fd169f86fd52a9c44c1edff16c69b06d7b630cabf74a0f79ea396b0886ba4f9e",
+        "qspi/qspi_pio.h": "ffb3c79558dfe2dda91145a04954c421aac56c99b6fa1fb06edcce70e2b70d93",
+        "qspi/qspi.pio": "d131a9c97eedb691451470c312b48933afeac440ef6b37218e028c1f8a589d17",
+        "touch/FT6336U.c": "34b3bf7823321096bef5dd6932a3cf63a0aa678d3771a64cd09177f06a64808b",
+        "touch/FT6336U.h": "d8551f475f79ad3ae022ea4605bf532d226b5e07d7dca55340483e990dc92cd2"
+      }
+    },
+    {
+      "name": "Raspberry Pi pico-extras I2S PIO",
+      "source": "https://github.com/raspberrypi/pico-extras",
+      "commit": "52fd7a786ce47c989afeaee67e0c6aebee56ed2d",
+      "license": "BSD-3-Clause",
+      "localPath": "src/audio",
+      "localModifications": "Uses 32-bit channel slots and places the public entry point at the left-channel boundary for deterministic startup.",
+      "files": {
+        "i2s_tx.pio": "1171dfe28a090e8d549a355299ccfdcea75dbd707217c41518aafab9e6b39250"
+      }
+    }
+  ]
+}

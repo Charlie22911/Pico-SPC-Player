@@ -1,0 +1,16 @@
+/build*/
+/local-artifacts/
+/local-music/
+/CMakeUserPresets.json
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+__pycache__/
+*.spc
+*.wav
+*.uf2
+*.elf
+*.bin
+*.hex
+*.map
