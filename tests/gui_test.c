@@ -106,6 +106,12 @@ static void test_screen_routing_and_visual_rate(void) {
     assert((aram_request & 1u) == 0u);
     tap(&ui, &commands, 100u, 170u);
     assert(ui.screen == UI_SCREEN_ARAM);
+    (void)ui_handle_touch(&ui, 100u, 200u, true, &commands);
+    const ui_dirty_t large_aram_dirty =
+        ui_handle_touch(&ui, 100u, 200u, false, &commands);
+    assert(large_aram_dirty.changed && !large_aram_dirty.full);
+    assert(large_aram_dirty.rect.y <= 102);
+    assert((int32_t)large_aram_dirty.rect.y + large_aram_dirty.rect.height >= 476);
     tap(&ui, &commands, 380u, 50u);
     assert(ui.screen == UI_SCREEN_PLAYER);
 
@@ -144,9 +150,17 @@ static void test_command_queue_preserves_order_and_reports_full(void) {
 }
 
 static void test_dirty_render_matches_full_render(void) {
+    static const uint8_t quotation_mark[7] = {10, 10, 10, 0, 0, 0, 0};
+    static const uint8_t ampersand[7] = {12, 18, 20, 8, 21, 18, 13};
+    static const uint8_t apostrophe[7] = {4, 4, 8, 0, 0, 0, 0};
+    static const uint8_t semicolon[7] = {0, 4, 0, 0, 4, 4, 8};
     static const uint8_t open_parenthesis[7] = {2, 4, 8, 8, 8, 4, 2};
     static const uint8_t close_parenthesis[7] = {8, 4, 2, 2, 2, 4, 8};
     static const uint8_t underscore[7] = {0, 0, 0, 0, 0, 0, 31};
+    assert(memcmp(ui_font_glyph('"'), quotation_mark, sizeof(quotation_mark)) == 0);
+    assert(memcmp(ui_font_glyph('&'), ampersand, sizeof(ampersand)) == 0);
+    assert(memcmp(ui_font_glyph('\''), apostrophe, sizeof(apostrophe)) == 0);
+    assert(memcmp(ui_font_glyph(';'), semicolon, sizeof(semicolon)) == 0);
     assert(memcmp(ui_font_glyph('('), open_parenthesis, sizeof(open_parenthesis)) == 0);
     assert(memcmp(ui_font_glyph(')'), close_parenthesis, sizeof(close_parenthesis)) == 0);
     assert(memcmp(ui_font_glyph('_'), underscore, sizeof(underscore)) == 0);

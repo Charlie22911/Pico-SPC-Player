@@ -443,7 +443,8 @@ ui_dirty_t ui_handle_touch(ui_t *ui, uint16_t x, uint16_t y, bool pressed,
     ui->pressed_target = UI_TARGET_NONE;
     const bool screen_changed = activate(ui, event.target, commands);
     if (event.target == UI_TARGET_ARAM_MAP) {
-        return (ui_dirty_t){true, false, {0, 100, 450, 310}};
+        const int16_t height = ui->screen == UI_SCREEN_PLAYER ? 310 : 380;
+        return (ui_dirty_t){true, false, {0, 100, 450, height}};
     }
     return (ui_dirty_t){true, screen_changed,
                         screen_changed ? (ui_rect_t){0, 0, 450, 600} : old_rect};

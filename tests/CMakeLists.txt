@@ -55,6 +55,19 @@ target_compile_options(aram_activity_test PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
 add_test(NAME aram_activity COMMAND aram_activity_test)
 
+add_executable(visual_pipeline_test visual_pipeline_test.c
+    ../src/app/visual_pipeline.c
+    ../src/audio/pcm_queue.c
+    ../src/spc/spc_snapshot.c
+    ../src/visualizer/aram_activity.c
+    ../src/visualizer/aram_data.c
+    ../src/visualizer/visual_rate.c)
+target_include_directories(visual_pipeline_test PRIVATE
+    ../src ../src/audio ../src/player ../src/spc)
+target_compile_options(visual_pipeline_test PRIVATE
+    -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
+add_test(NAME visual_pipeline_data_voice_snapshots COMMAND visual_pipeline_test)
+
 add_executable(storage_test storage_test.c
     ../src/storage/spc_catalog.c ../src/storage/storage_mailbox.c)
 target_include_directories(storage_test PRIVATE ../src)

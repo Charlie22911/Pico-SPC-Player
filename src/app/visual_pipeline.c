@@ -102,7 +102,7 @@ void visual_pipeline_service(visual_pipeline_t *pipeline, player_t *player,
         pipeline->published_map_request = request;
         pipeline->published_map_generation = player->generation;
     }
-    if (data_mode) {
+    if (data_mode && !scheduled && !map_published) {
         return;
     }
 

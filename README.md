@@ -46,6 +46,13 @@ Place each game's SPC files directly inside one root-level folder:
 
 The player does not autoplay. Open **Library**, choose a folder, and choose a track.
 
+## Firmware download
+
+Download the current public UF2 from the
+[latest GitHub release](https://github.com/Charlie22911/Pico-SPC-Player/releases/latest), then copy
+`Pico-SPC-Player.uf2` to the RP2350 BOOTSEL volume. Public release builds contain no embedded SPC
+music; place tracks on the microSD card as described above.
+
 ## Quick build
 
 The public configuration contains no music and builds without an SPC file:
