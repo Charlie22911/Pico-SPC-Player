@@ -15,6 +15,7 @@ DSP views.
 
 The firmware supports software SPC700/S-DSP playback, read-only SD library browsing, touch
 controls, and live visualization. Direct control of a physical SPC700 module is not supported.
+Supported firmware releases target the RP2350's Arm Cortex-M33 cores at 250 MHz.
 
 - 32 kHz stereo output over PIO-driven I2S with DMA buffering
 - Read-only FAT12/16/32 library organized as `/game/track.spc`
@@ -58,7 +59,9 @@ music; place tracks on the microSD card as described above.
 The public configuration contains no music and builds without an SPC file:
 
 ```sh
-cmake -S . -B build -G Ninja -DPICO_SDK_PATH=/path/to/pico-sdk
+cmake -S . -B build -G Ninja \
+  -DPICO_SDK_PATH=/path/to/pico-sdk \
+  -DPICO_PLATFORM=rp2350-arm-s -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target pico_spc_player
 ```
 
@@ -77,6 +80,8 @@ cmake --build build-embedded --target pico_spc_player
 ## Documentation
 
 - [Building and flashing](docs/building.md)
+- [Changelog](CHANGELOG.md)
+- [Arm Data-view optimization results](docs/aram-optimization-build.md)
 - [Hardware and wiring](docs/hardware.md)
 - [User guide](docs/user-guide.md)
 - [SNES audio and SPC file overview](docs/snes-audio.md)

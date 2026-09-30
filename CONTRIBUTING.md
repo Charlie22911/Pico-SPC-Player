@@ -3,6 +3,7 @@
 Pico-SPC-Player welcomes focused changes that preserve real-time audio behavior and keep the
 hardware assumptions explicit. Open an issue or describe the device evidence when changing a
 timing, pin, electrical, or display-controller claim.
+Development and release validation target the RP2350 Arm Cortex-M33 cores (`rp2350-arm-s`).
 
 ## Finding the right code
 

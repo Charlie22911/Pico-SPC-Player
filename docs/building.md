@@ -16,22 +16,40 @@ git clone --branch 2.2.0 --recurse-submodules https://github.com/raspberrypi/pic
 
 ## Public build
 
+The supported target is the RP2350's Arm Cortex-M33 cores (`rp2350-arm-s`).
 The default configuration embeds no music:
 
 ```sh
-cmake -S . -B build -G Ninja -DPICO_SDK_PATH=/opt/pico-sdk
+cmake -S . -B build -G Ninja \
+  -DPICO_SDK_PATH=/opt/pico-sdk \
+  -DPICO_PLATFORM=rp2350-arm-s -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target pico_spc_player
 ```
 
 The resulting firmware is `build/Pico-SPC-Player.uf2`.
 
+Public releases also provide checksums and a `Pico-SPC-Player-*-relink.tar.gz`
+archive containing matching object files, libraries, linker scripts, emulator
+source, and relinking instructions. The complete corresponding project source
+is available at the release tag.
+
 From WSL, both the repository and SDK may use Linux paths:
 
 ```sh
 cd /mnt/c/path/to/Pico-SPC-Player
-cmake -S . -B build -G Ninja -DPICO_SDK_PATH=$HOME/pico-sdk
+cmake -S . -B build -G Ninja \
+  -DPICO_SDK_PATH=$HOME/pico-sdk \
+  -DPICO_PLATFORM=rp2350-arm-s -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target pico_spc_player
 ```
+
+## Emulator code placement
+
+The DSP loop and SPC interpreter execute from internal SRAM by default.
+The SDK copies their code from flash at boot. Configure with
+`-DPICO_SPC_EMULATOR_IN_SRAM=OFF` to keep these functions in flash. Host builds
+use their normal code placement. See [the Arm optimization results](aram-optimization-build.md)
+for the Data recording, display palette, and SRAM placement changes and results.
 
 ## Optional private embedded track
 

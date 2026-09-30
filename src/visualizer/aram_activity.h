@@ -46,6 +46,9 @@ typedef struct {
  * one bit per 16-bit ARAM address. Publication/acquisition never waits. */
 
 void aram_activity_init(aram_activity_t *activity, uint32_t generation);
+/* Clears the producer bank and discards unread publications, preserving any
+ * consumer-held bank. Core 0 uses this when restarting Activity recording. */
+void aram_activity_restart(aram_activity_t *activity, uint32_t generation);
 void aram_activity_reset_generation(aram_activity_t *activity, uint32_t generation);
 void aram_activity_producer_maps(aram_activity_t *activity, uint8_t **read, uint8_t **write,
                                  uint8_t **execute);

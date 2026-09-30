@@ -430,7 +430,14 @@ ui_dirty_t ui_handle_touch(ui_t *ui, uint16_t x, uint16_t y, bool pressed,
     if (event.type == UI_TOUCH_NO_EVENT)
         return (ui_dirty_t){0};
 
-    const ui_rect_t old_rect = ui_target_rect(ui->screen, event.target);
+    ui_rect_t old_rect = ui_target_rect(ui->screen, event.target);
+    if (event.target == UI_TARGET_ARAM_MAP) {
+        /* Routine map updates exclude the border; touch feedback owns it. */
+        old_rect.x = (int16_t)(old_rect.x - 2);
+        old_rect.y = (int16_t)(old_rect.y - 2);
+        old_rect.width = (int16_t)(old_rect.width + 4);
+        old_rect.height = (int16_t)(old_rect.height + 4);
+    }
     if (event.type == UI_TOUCH_PRESS_CHANGED) {
         ui->pressed_target = pressed ? event.target : UI_TARGET_NONE;
         return (ui_dirty_t){true, false, old_rect};

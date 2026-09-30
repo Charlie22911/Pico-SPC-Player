@@ -194,7 +194,7 @@ static void queue_model_changes(ui_dirty_queue_t *queue, const ui_t *ui,
     if (old_model->generation != new_model->generation ||
         old_model->aram_sequence != new_model->aram_sequence) {
         if (ui->screen == UI_SCREEN_PLAYER) {
-            queue_dirty(queue, (ui_dirty_t){true, false, {12, 124, 260, 260}});
+            queue_dirty(queue, (ui_dirty_t){true, false, UI_RECT_PLAYER_ARAM_MAP});
         } else if (ui->screen == UI_SCREEN_ARAM) {
             queue_dirty(queue, (ui_dirty_t){true, false, UI_ARAM_LARGE_MAP});
         }

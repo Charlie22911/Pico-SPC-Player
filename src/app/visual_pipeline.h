@@ -27,12 +27,14 @@ typedef struct {
     uint32_t data_sequence;
     uint32_t published_map_request;
     uint32_t published_map_generation;
+    uint32_t processed_aram_request;
+    bool activity_recording;
 } visual_pipeline_t;
 
 /* Initializes all producer/consumer state. This function does not block. */
 void visual_pipeline_init(visual_pipeline_t *pipeline, uint8_t initial_hz);
 
-/* Binds caller-owned activity maps to a Core 0 backend. This function does not block. */
+/* Binds activity maps, or disables recording in Data mode, on Core 0. */
 void visual_pipeline_bind_backend(visual_pipeline_t *pipeline, software_spc_backend_t *backend);
 
 /* Opportunistically publishes copied visual state on Core 0. This function does not block. */

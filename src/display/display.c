@@ -1,4 +1,5 @@
 #include "display.h"
+#include "display_palette.h"
 
 #include <stddef.h>
 
@@ -41,6 +42,7 @@ typedef struct {
     uint16_t origin_y;
     display_palette_region_t secondary_regions[DISPLAY_PALETTE_REGION_CAPACITY];
     uint8_t secondary_region_count;
+    display_palette_mode_t palette_mode;
 } display_transfer_t;
 
 static uint32_t pair_lut[256];
@@ -76,17 +78,6 @@ void display_set_secondary_palette(const uint16_t palette[16]) {
     build_pair_lut(secondary_pair_lut, palette);
 }
 
-static bool pair_uses_secondary_palette(uint16_t x, uint16_t y) {
-    for (uint8_t i = 0u; i < transfer.secondary_region_count; ++i) {
-        const display_palette_region_t *region = &transfer.secondary_regions[i];
-        if (x >= region->x && x < (uint32_t)region->x + region->width && y >= region->y &&
-            y < (uint32_t)region->y + region->height) {
-            return true;
-        }
-    }
-    return false;
-}
-
 static void recover_transport(void) {
     dma_channel_abort(g_dma_tx_channel);
     pio_sm_set_enabled(g_qspi.pio, g_qspi.sm, false);
@@ -111,12 +102,10 @@ static bool prepare_buffer(uint32_t buffer) {
         const uint8_t *source =
             transfer.pixels + (size_t)(transfer.next_row + row) * transfer.stride_bytes;
         uint32_t *destination = stage[buffer] + (size_t)row * pairs;
-        for (uint16_t pair = 0u; pair < pairs; ++pair) {
-            const uint16_t x = (uint16_t)(transfer.origin_x + pair * 2u);
-            const uint16_t y = (uint16_t)(transfer.origin_y + transfer.next_row + row);
-            const uint32_t *lut = pair_uses_secondary_palette(x, y) ? secondary_pair_lut : pair_lut;
-            destination[pair] = lut[source[pair]];
-        }
+        display_palette_expand_row(
+            destination, source, pairs, transfer.origin_x,
+            (uint16_t)(transfer.origin_y + transfer.next_row + row), transfer.palette_mode,
+            pair_lut, secondary_pair_lut, transfer.secondary_regions, transfer.secondary_region_count);
     }
     transfer.buffer_rows[buffer] = rows;
     transfer.buffer_ready[buffer] = true;
@@ -162,6 +151,8 @@ bool display_begin_indexed4(uint16_t x, uint16_t y, uint16_t width, uint16_t hei
         .origin_x = x,
         .origin_y = y,
         .secondary_region_count = secondary_region_count,
+        .palette_mode = display_palette_classify(x, y, width, height, secondary_regions,
+                                                 secondary_region_count),
     };
     for (uint8_t i = 0u; i < secondary_region_count; ++i)
         transfer.secondary_regions[i] = secondary_regions[i];

@@ -288,6 +288,40 @@ static void test_marquee_and_stale_titles(void) {
     assert(library.row_epoch_ms[0] == 200u);
 }
 
+static void test_aram_map_border_dirty(void) {
+    static uint8_t partial_pixels[UI_INDEXED4_STRIDE(450u) * 600u];
+    static uint8_t full_pixels[sizeof(partial_pixels)];
+    ui_canvas_t partial = {partial_pixels, 450u, 600u, UI_INDEXED4_STRIDE(450u), {0}};
+    ui_canvas_t full = {full_pixels, 450u, 600u, UI_INDEXED4_STRIDE(450u), {0}};
+    ui_canvas_reset_clip(&partial);
+    ui_canvas_reset_clip(&full);
+    const ui_model_t model = {0};
+    ui_t ui;
+    ui_init(&ui, &model);
+    ui_render(&ui, &partial);
+    player_command_queue_t commands;
+    player_command_queue_init(&commands);
+    ui_dirty_t dirty = ui_handle_touch(&ui, 20u, 140u, true, &commands);
+    assert(ui.pressed_target == UI_TARGET_ARAM_MAP);
+    ui_render_dirty(&ui, &partial, dirty);
+    ui_render(&ui, &full);
+    assert(memcmp(partial_pixels, full_pixels, sizeof(partial_pixels)) == 0);
+    dirty = ui_handle_touch(&ui, 300u, 140u, true, &commands);
+    assert(ui.pressed_target == UI_TARGET_NONE);
+    ui_render_dirty(&ui, &partial, dirty);
+    ui_render(&ui, &full);
+    assert(memcmp(partial_pixels, full_pixels, sizeof(partial_pixels)) == 0);
+
+    /* The large map has the same two-pixel border ownership. */
+    ui.screen = UI_SCREEN_ARAM;
+    ui_touch_init(&ui.touch);
+    ui_render(&ui, &partial);
+    dirty = ui_handle_touch(&ui, 20u, 140u, true, &commands);
+    ui_render_dirty(&ui, &partial, dirty);
+    ui_render(&ui, &full);
+    assert(memcmp(partial_pixels, full_pixels, sizeof(partial_pixels)) == 0);
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
     if (strcmp(argv[1], "touch") == 0) {
@@ -296,6 +330,7 @@ int main(int argc, char **argv) {
         test_command_queue_preserves_order_and_reports_full();
     } else if (strcmp(argv[1], "render") == 0) {
         test_dirty_render_matches_full_render();
+        test_aram_map_border_dirty();
     } else if (strcmp(argv[1], "marquee") == 0) {
         test_marquee_and_stale_titles();
     } else if (strcmp(argv[1], "routing") == 0) {

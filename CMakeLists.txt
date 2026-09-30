@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
+set(PICO_PLATFORM "rp2350-arm-s" CACHE STRING "Target platform")
 set(PICO_BOARD "waveshare_rp2350_touch_amoled_2.41" CACHE STRING "Target board")
 list(APPEND PICO_BOARD_HEADER_DIRS "${CMAKE_CURRENT_LIST_DIR}/boards")
 
@@ -12,7 +13,7 @@ if(NOT DEFINED PICO_SDK_PATH)
 endif()
 include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(PicoSPCPlayer VERSION 0.1.0 LANGUAGES C CXX ASM)
+project(PicoSPCPlayer VERSION 0.1.1 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -51,6 +52,11 @@ add_library(snes_spc STATIC
 )
 target_include_directories(snes_spc PUBLIC third_party/snes_spc)
 target_compile_definitions(snes_spc PUBLIC SPC_ENABLE_ARAM_VISUALIZER=1)
+
+option(PICO_SPC_EMULATOR_IN_SRAM "Place the DSP loop and SPC interpreter in SRAM" ON)
+if(PICO_SPC_EMULATOR_IN_SRAM)
+    target_compile_definitions(snes_spc PRIVATE PICO_SPC_EMULATOR_IN_SRAM=1)
+endif()
 target_compile_options(snes_spc PRIVATE -fno-exceptions -fno-rtti)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # The upstream core intentionally addresses contiguous RAM padding.
@@ -123,6 +129,8 @@ add_executable(pico_spc_player
     ${PICO_SPC_VENDOR_SOURCES}
 )
 set_target_properties(pico_spc_player PROPERTIES OUTPUT_NAME "Pico-SPC-Player")
+pico_set_program_name(pico_spc_player "Pico-SPC-Player")
+pico_set_program_version(pico_spc_player "${PROJECT_VERSION}")
 
 pico_generate_pio_header(pico_spc_player
     ${CMAKE_CURRENT_LIST_DIR}/src/audio/i2s_tx.pio)

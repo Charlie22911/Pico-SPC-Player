@@ -20,10 +20,16 @@ void visual_pipeline_init(visual_pipeline_t *pipeline, uint8_t initial_hz) {
     pipeline->data_sequence = 0u;
     pipeline->published_map_request = 0u;
     pipeline->published_map_generation = UINT32_MAX;
+    pipeline->processed_aram_request = 0u;
+    pipeline->activity_recording = true;
 }
 
 void visual_pipeline_bind_backend(visual_pipeline_t *pipeline, software_spc_backend_t *backend) {
     if (pipeline == NULL || backend == NULL) {
+        return;
+    }
+    if (!pipeline->activity_recording) {
+        software_spc_set_aram_visualizer(backend, NULL, NULL, NULL);
         return;
     }
     uint8_t *read;
@@ -54,16 +60,28 @@ void visual_pipeline_service(visual_pipeline_t *pipeline, player_t *player,
         return;
     }
 
-    if (player->generation != pipeline->snapshot_generation) {
-        pipeline->snapshot_generation = player->generation;
-        pipeline->rate.phase = 0u;
-        aram_activity_reset_generation(&pipeline->activity, player->generation);
-        visual_pipeline_bind_backend(pipeline, player->backend);
-    }
-
     const uint32_t request =
         atomic_load_explicit(&pipeline->requested_aram_map, memory_order_acquire);
     const bool data_mode = (request & 1u) != 0u;
+    const bool recording_changed = pipeline->activity_recording != !data_mode;
+    /* Requests are latest-value tokens: Data and then Activity can arrive
+     * between service calls without Core 0 ever observing the Data token. */
+    const bool restart_activity = recording_changed ||
+        (!data_mode && request != pipeline->processed_aram_request);
+    const bool generation_changed = player->generation != pipeline->snapshot_generation;
+    if (generation_changed || restart_activity) {
+        pipeline->snapshot_generation = player->generation;
+        if (generation_changed)
+            pipeline->rate.phase = 0u;
+        if (restart_activity)
+            aram_activity_restart(&pipeline->activity, player->generation);
+        else
+            aram_activity_reset_generation(&pipeline->activity, player->generation);
+        pipeline->activity_recording = !data_mode;
+        visual_pipeline_bind_backend(pipeline, player->backend);
+    }
+    pipeline->processed_aram_request = request;
+
     const bool forced = request != pipeline->published_map_request ||
                         player->generation != pipeline->published_map_generation;
     const bool paused = player->mode == PLAYER_PAUSED || player->mode == PLAYER_FADING_FOR_PAUSE;

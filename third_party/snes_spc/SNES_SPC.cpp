@@ -514,7 +514,7 @@ int SNES_SPC::cpu_read( int addr, rel_time_t time )
 
 // Prefix and suffix for CPU emulator function
 #define SPC_CPU_RUN_FUNC \
-BOOST::uint8_t* SNES_SPC::run_until_( time_t end_time )\
+SPC_HOT_CODE BOOST::uint8_t* SNES_SPC::run_until_( time_t end_time )\
 {\
 	rel_time_t rel_time = m.spc_time - end_time;\
 	assert( rel_time <= 0 );\

@@ -55,6 +55,12 @@ target_compile_options(aram_activity_test PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
 add_test(NAME aram_activity COMMAND aram_activity_test)
 
+add_executable(display_palette_test display_palette_test.c)
+target_include_directories(display_palette_test PRIVATE ../src)
+target_compile_options(display_palette_test PRIVATE
+    -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
+add_test(NAME display_palette COMMAND display_palette_test)
+
 add_executable(visual_pipeline_test visual_pipeline_test.c
     ../src/app/visual_pipeline.c
     ../src/audio/pcm_queue.c
@@ -88,6 +94,17 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(gui_preview_backend PRIVATE
         $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions;-fno-rtti>)
 endif()
+
+add_executable(visual_pipeline_backend_test visual_pipeline_backend_test.c
+    ../src/app/visual_pipeline.c ../src/audio/pcm_queue.c
+    ../src/visualizer/aram_activity.c ../src/visualizer/aram_data.c
+    ../src/visualizer/visual_rate.c)
+target_include_directories(visual_pipeline_backend_test PRIVATE
+    ../src ../src/audio ../src/player ../src/spc)
+target_compile_options(visual_pipeline_backend_test PRIVATE
+    -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
+target_link_libraries(visual_pipeline_backend_test PRIVATE gui_preview_backend)
+add_test(NAME visual_pipeline_recording COMMAND visual_pipeline_backend_test)
 
 add_executable(gui_preview gui_preview.c
     ../src/spc/spc_metadata.c

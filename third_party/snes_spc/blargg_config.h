@@ -21,4 +21,12 @@
 	#include "config.h"
 #endif
 
+// Pico firmware only: the SDK copies .time_critical.* sections to SRAM at boot.
+// Host builds keep the normal placement; emulation calculations are unchanged.
+#if defined(PICO_SPC_EMULATOR_IN_SRAM) && PICO_SPC_EMULATOR_IN_SRAM
+    #define SPC_HOT_CODE __attribute__((section(".time_critical.spc"), noinline))
+#else
+    #define SPC_HOT_CODE
+#endif
+
 #endif

@@ -809,7 +809,7 @@ PHASE(31)  V(V4,0)       V(V1,2)\
 
 #if !SPC_DSP_CUSTOM_RUN
 
-void SPC_DSP::run( int clocks_remain )
+SPC_HOT_CODE void SPC_DSP::run( int clocks_remain )
 {
 	require( clocks_remain > 0 );
 	

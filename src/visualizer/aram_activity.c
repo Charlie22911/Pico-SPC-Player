@@ -19,8 +19,8 @@ void aram_activity_init(aram_activity_t *activity, uint32_t generation) {
     activity->banks[0].generation = generation;
 }
 
-void aram_activity_reset_generation(aram_activity_t *activity, uint32_t generation) {
-    if (activity == NULL || activity->generation == generation)
+void aram_activity_restart(aram_activity_t *activity, uint32_t generation) {
+    if (activity == NULL)
         return;
     activity->generation = generation;
     aram_activity_bank_t *producer = &activity->banks[activity->producer_bank];
@@ -32,6 +32,11 @@ void aram_activity_reset_generation(aram_activity_t *activity, uint32_t generati
     (void)atomic_compare_exchange_strong_explicit(&activity->states[other], &expected,
                                                   ARAM_ACTIVITY_BANK_FREE, memory_order_acq_rel,
                                                   memory_order_acquire);
+}
+
+void aram_activity_reset_generation(aram_activity_t *activity, uint32_t generation) {
+    if (activity != NULL && activity->generation != generation)
+        aram_activity_restart(activity, generation);
 }
 
 void aram_activity_producer_maps(aram_activity_t *activity, uint8_t **read, uint8_t **write,

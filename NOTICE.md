@@ -10,7 +10,8 @@ are retained in `third_party/snes_spc/`; a copy of the license is in
 `LICENSES/LGPL-2.1.txt`.
 
 Local changes add copy-only DSP/voice snapshots and compile-time optional ARAM activity and Data
-heatmap hooks. The modifications do not expose live emulator storage. Binary redistributors must
+heatmap hooks, plus optional SRAM placement of the DSP loop and SPC interpreter in Pico firmware.
+The modifications do not expose live emulator storage. Binary redistributors must
 retain the applicable notices and satisfy the LGPL source and relinking requirements.
 
 ## FatFs
