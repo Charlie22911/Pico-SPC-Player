@@ -28,9 +28,10 @@ unchanged. PSRAM placement is unchanged.
 
 ## Hardware comparison
 
-I compared the Arm baseline and optimized firmware using SNEStronizer with the
-home ARAM Data view set to 60 Hz. My baseline run lasted approximately 45 seconds.
-The table shows the diagnostics before and after the three optimizations.
+I compared the Arm baseline and optimized firmware using
+[SNEStronizer](https://github.com/ResistanceVault/demo-twistit/blob/master/data/SNEStronizer.spc)
+with the home ARAM Data view set to 60 Hz. My baseline run lasted approximately
+45 seconds. The table shows the diagnostics before and after the three optimizations.
 
 | Diagnostic | Before | After |
 | --- | ---: | ---: |
