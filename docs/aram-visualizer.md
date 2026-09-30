@@ -42,8 +42,8 @@ distinct. The display uses a separate 16-entry RGB565 heatmap palette for the ma
 text and buttons continue using the normal palette.
 
 A 32 KiB ARAM copy is permitted only when at least two complete audio blocks are buffered. A
-mode-request token and playback generation travel with the copy. Core 1 rejects a result if the
-user has since changed modes or another track has loaded.
+mode-request token and playback generation travel with the copy. Core 1 rejects a result after
+a mode change or track load.
 
 ## Timing and safety
 

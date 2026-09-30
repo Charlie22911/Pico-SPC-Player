@@ -26,11 +26,11 @@ Playback calculations, echo processing, sample rate, audio block size,
 ARAM value conversion, Activity-map rendering, and scaling algorithms are
 unchanged. PSRAM placement is unchanged.
 
-## Reported hardware result
+## Hardware comparison
 
-The user compared the Arm baseline and optimization images using SNEStronizer
-with the home ARAM Data view set to 60 Hz. The baseline run lasted approximately
-45 seconds; the follow-up was reported as the same comparison after the changes.
+I compared the Arm baseline and optimized firmware using SNEStronizer with the
+home ARAM Data view set to 60 Hz. My baseline run lasted approximately 45 seconds.
+The table shows the diagnostics before and after the three optimizations.
 
 | Diagnostic | Before | After |
 | --- | ---: | ---: |
@@ -43,14 +43,15 @@ with the home ARAM Data view set to 60 Hz. The baseline run lasted approximately
 | Audio status queue drops | 20 | 20 |
 | DSP/voice snapshot drops | 1,198 | 0 |
 
-These are observations from one comparison, not an isolated measurement of
-any individual optimization. Render and GUI diagnostics are recorded maxima.
-MAP is excluded here because it counts completed full-screen ARAM transfers
-and retains its last value on the home screen.
+I tested all three optimizations together, so these results show their combined
+effect. They do not establish the contribution of each individual change.
+Render and GUI diagnostics are recorded maxima. MAP counts completed full-screen
+ARAM transfers and retains its last value on the home screen, so it does not
+measure home-view refresh rates.
 
-The measurements used the Arm optimization image before release version
-metadata was added. Release 0.1.1 rebuilds the same playback and visualization
-code with an explicit Arm default and firmware version metadata.
+I collected these measurements with the optimized Arm firmware before the
+release version metadata was added. Release 0.1.1 uses the same playback and
+visualization code, with an explicit Arm default and firmware version metadata.
 
 ## Verification
 
