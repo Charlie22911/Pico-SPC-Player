@@ -51,6 +51,10 @@ void aram_activity_producer_maps(aram_activity_t *activity, uint8_t **read, uint
 }
 
 bool aram_activity_publish(aram_activity_t *activity) {
+    return aram_activity_publish_request(activity, 0u);
+}
+
+bool aram_activity_publish_request(aram_activity_t *activity, uint32_t request) {
     if (activity == NULL)
         return false;
     const uint32_t current = activity->producer_bank;
@@ -66,6 +70,7 @@ bool aram_activity_publish(aram_activity_t *activity) {
                           memory_order_relaxed);
     activity->banks[current].generation = activity->generation;
     activity->banks[current].sequence = ++activity->sequence;
+    activity->banks[current].request = request;
     activity->producer_bank = next;
     atomic_store_explicit(&activity->states[current], ARAM_ACTIVITY_BANK_READY,
                           memory_order_release);
@@ -87,6 +92,7 @@ bool aram_activity_acquire(aram_activity_t *activity, aram_activity_snapshot_t *
                 .execute = source->execute,
                 .generation = source->generation,
                 .sequence = source->sequence,
+                .request = source->request,
                 .bank = bank,
                 .held = true,
             };

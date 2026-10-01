@@ -26,7 +26,8 @@ The AMOLED, touch, board, and QSPI sources were imported from the RP2350 Touch A
 in `Charlie22911/RP2350-Remote-Display` at commit
 `813e35c75544e116bd1541e1dd09e0d9cba484f6`. Those files retain Waveshare's MIT-style permission
 notice, also copied in `LICENSES/Waveshare-MIT.txt`. Local integration adapts the drivers to
-asynchronous palette expansion and the project's Core 1 display ownership.
+asynchronous palette expansion and the project's Core 1 display ownership, and initializes
+UART after the final peripheral clock configuration.
 
 ## Raspberry Pi I2S PIO
 

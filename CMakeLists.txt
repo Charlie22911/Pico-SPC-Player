@@ -13,7 +13,7 @@ if(NOT DEFINED PICO_SDK_PATH)
 endif()
 include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(PicoSPCPlayer VERSION 0.1.1 LANGUAGES C CXX ASM)
+project(PicoSPCPlayer VERSION 0.1.2 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -78,15 +78,19 @@ target_compile_options(software_spc_backend PRIVATE
 set(PICO_SPC_PROJECT_SOURCES
     src/main.c
     src/app/visual_pipeline.c
+    src/app/visual_consumer.c
     src/app/ui_runtime.c
     src/audio/audio_status_queue.c
     src/audio/i2s_output.c
     src/audio/pcm_format.c
     src/audio/pcm_queue.c
     src/board/board.c
+    src/board/clock_validation.c
+    src/board/flash_clock.c
     src/board/psram.c
     src/board/psram_validation.c
     src/display/display.c
+    src/diagnostics/uart_performance.c
     src/player/player.c
     src/player/player_commands.c
     src/spc/spc_metadata.c
@@ -148,9 +152,19 @@ target_include_directories(pico_spc_player PRIVATE
 )
 target_compile_definitions(pico_spc_player PRIVATE
     RPD_SYS_CLOCK_KHZ=250000u
+    PICO_DEFAULT_UART_BAUD_RATE=115200
+    PICO_SPC_BUILD_VERSION="${PROJECT_VERSION}"
+    PICO_CORE1_STACK_SIZE=4096u
     PICO_SPC_HAS_EMBEDDED=${PICO_SPC_HAS_EMBEDDED}
     EMBEDDED_SPC_BASENAME="${EMBEDDED_SPC_BASENAME}"
 )
+option(PICO_SPC_UART_PERFORMANCE "Report performance over UART every five seconds" ON)
+if(PICO_SPC_UART_PERFORMANCE)
+    target_compile_definitions(pico_spc_player PRIVATE PICO_SPC_UART_PERFORMANCE=1)
+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(pico_spc_player PRIVATE $<$<COMPILE_LANGUAGE:C>:-fstack-usage>)
+    endif()
+endif()
 
 set_source_files_properties(${PICO_SPC_PROJECT_SOURCES} PROPERTIES
     COMPILE_OPTIONS "$<$<COMPILE_LANG_AND_ID:C,GNU,Clang>:-Wall;-Wextra;-Wshadow>"
@@ -160,7 +174,7 @@ target_link_libraries(pico_spc_player PRIVATE
     software_spc_backend
     pico_stdlib pico_multicore
     hardware_adc hardware_clocks hardware_dma hardware_gpio hardware_i2c hardware_irq
-    hardware_pio hardware_pwm hardware_spi hardware_sync
+    hardware_pio hardware_pwm hardware_spi hardware_sync hardware_xip_cache
 )
 pico_enable_stdio_uart(pico_spc_player 1)
 pico_enable_stdio_usb(pico_spc_player 0)

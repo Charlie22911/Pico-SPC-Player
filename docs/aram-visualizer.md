@@ -27,6 +27,12 @@ Core 0 writes one of two 24 KiB activity banks. It publishes only when the other
 then immediately attaches the emulator hooks to the cleared replacement bank. Core 1 acquires a
 ready bank, converts it into its persistent packed view, and releases it. Neither core waits.
 
+Conversion reads the three activity bitmaps by byte, producing eight address pixels at a
+time with the same overlap colors and fade history. Activity recording is disabled while
+Data mode is requested. Switching back starts fresh tracking without clearing a bank held
+by Core 1. Both mode requests and playback generations tag the published banks so that a
+late result cannot overwrite the current view.
+
 ## Data mode
 
 Data mode copies the current ARAM byte values into a separate 32 KiB packed image. Zero is black.
@@ -48,6 +54,13 @@ a mode change or track load.
 ## Timing and safety
 
 The selected 30 or 60 Hz rate is driven by rendered audio frames rather than wall-clock delay.
-Publication is skipped when a consumer still holds the relevant buffer. These drops preserve the
-audio deadline and appear in the Settings diagnostics. The hooks and copy functions do not modify
-emulated RAM, registers, DSP state, or PCM output.
+Publication is skipped when a consumer still holds the relevant buffer or when a Data copy
+lacks audio headroom. UART diagnostics count these skips separately from DSP/voice snapshot
+queue drops. The hooks and copy functions do not modify emulated RAM, registers, DSP state,
+or PCM output.
+
+Core 1 polls ARAM publications independently of the general UI model timer. The 422x310
+full-screen scaler uses packed pixel pairs and copies adjacent output rows that share a
+source row. The scaled map is still drawn into the indexed framebuffer before palette
+conversion into the display DMA buffers; scaling and transmission are separate stages.
+Framebuffer drawing waits for the preceding display transfer to finish.

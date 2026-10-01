@@ -28,6 +28,8 @@ typedef struct {
 board_result_t board_init(void);
 board_result_t board_ui_init(void);
 board_status_t board_get_status(void);
+/* Boot-time UART report; call before starting audio and Core 1. */
+void board_print_diagnostics(void);
 bool board_touch_read(uint16_t *x, uint16_t *y, bool *pressed);
 
 #endif

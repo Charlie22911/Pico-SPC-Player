@@ -3,6 +3,7 @@
 
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
+#include "hardware/watchdog.h"
 
 #include "app/ui_runtime.h"
 #include "app/visual_pipeline.h"
@@ -34,12 +35,36 @@ static void core1_entry(void) {
     ui_runtime_run(&ui_runtime);
 }
 
+static void print_memory_diagnostics(void) {
+    extern char __end__, __HeapLimit;
+    extern void *_sbrk(int increment);
+    const uintptr_t heap_start = (uintptr_t)&__end__;
+    const uintptr_t heap_limit = (uintptr_t)&__HeapLimit;
+    const uintptr_t heap_break = (uintptr_t)_sbrk(0);
+    printf("MEMORY static_main_SRAM=%lu heap_region=%lu heap_unused_tail=%lu bytes "
+           "(tail excludes free blocks within allocated heap)\n",
+           (unsigned long)(heap_start - 0x20000000u), (unsigned long)(heap_limit - heap_start),
+           (unsigned long)(heap_break >= heap_start && heap_break <= heap_limit ? heap_limit - heap_break : 0u));
+    printf("BOOT watchdog_reboot=%u; STACK core0=%u core1=%u bytes\n",
+           watchdog_caused_reboot(), PICO_STACK_SIZE, PICO_CORE1_STACK_SIZE);
+    printf("AUDIO sample_rate=%uHz stereo16 slots32 block=%u frames budget=%uus queue=%u frames\n",
+           PCM_SAMPLE_RATE, PCM_BLOCK_FRAMES, PCM_BLOCK_FRAMES * 1000000u / PCM_SAMPLE_RATE,
+           PCM_QUEUE_CAPACITY);
+}
+
 int main(void) {
     const board_result_t board_result = board_init();
     const board_status_t board = board_get_status();
+    board_print_diagnostics();
     printf("Clock sys=%lu peri=%lu PSRAM(optional)=%u result=%d\n",
            (unsigned long)board.sys_clock_hz, (unsigned long)board.peri_clock_hz,
            (unsigned)board.psram_capacity_bytes, board_result);
+    if (!board.clock_ready) {
+        printf("Clock verification failed; playback stopped. Reset after correcting the clock configuration.\n");
+        while (true) {
+            tight_loop_contents();
+        }
+    }
 
     storage_init(&storage_manager);
     atomic_init(&audio_ready, false);
@@ -63,6 +88,7 @@ int main(void) {
     printf("Player idle: embedded bytes=%u init=%s\n", (unsigned)embedded_size,
            error == NULL ? "OK" : error);
     printf("Software SPC backend=%u bytes\n", (unsigned)software_spc_backend_size());
+    print_memory_diagnostics();
 
     ui_runtime = (ui_runtime_config_t){
         .storage = &storage_manager,

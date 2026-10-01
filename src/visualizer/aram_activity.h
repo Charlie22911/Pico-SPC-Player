@@ -22,6 +22,7 @@ typedef struct {
     uint8_t execute[ARAM_ACTIVITY_BITMAP_BYTES];
     uint32_t generation;
     uint32_t sequence;
+    uint32_t request;
 } aram_activity_bank_t;
 
 typedef struct {
@@ -38,6 +39,7 @@ typedef struct {
     const uint8_t *execute;
     uint32_t generation;
     uint32_t sequence;
+    uint32_t request;
     uint32_t bank;
     bool held;
 } aram_activity_snapshot_t;
@@ -53,6 +55,7 @@ void aram_activity_reset_generation(aram_activity_t *activity, uint32_t generati
 void aram_activity_producer_maps(aram_activity_t *activity, uint8_t **read, uint8_t **write,
                                  uint8_t **execute);
 bool aram_activity_publish(aram_activity_t *activity);
+bool aram_activity_publish_request(aram_activity_t *activity, uint32_t request);
 bool aram_activity_acquire(aram_activity_t *activity, aram_activity_snapshot_t *snapshot);
 void aram_activity_release(aram_activity_t *activity, aram_activity_snapshot_t *snapshot);
 

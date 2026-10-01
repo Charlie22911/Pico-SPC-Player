@@ -1,13 +1,16 @@
 #include "app/ui_runtime.h"
+#include "app/visual_consumer.h"
 
 #include <stdio.h>
 
 #include "pico/stdlib.h"
+#include "hardware/uart.h"
 
 #include "AMOLED_2in41.h"
 #include "audio/i2s_output.h"
 #include "board/board.h"
 #include "display/display.h"
+#include "diagnostics/uart_performance.h"
 #include "ui/ui.h"
 #include "ui/ui_aram.h"
 #include "visualizer/aram_view.h"
@@ -25,6 +28,44 @@ typedef struct {
 } ui_dirty_queue_t;
 
 static uint8_t ui_framebuffer[UI_INDEXED4_STRIDE(UI_WIDTH) * UI_HEIGHT];
+/* Core 1 owns this image. Its 32 KB storage must not live on the core's stack. */
+static aram_view_t ui_aram_view;
+
+#if PICO_SPC_UART_PERFORMANCE
+static uart_performance_t performance_log;
+static uart_performance_sample_t performance_sample;
+
+static bool try_uart_byte(void *context, char byte) {
+    (void)context;
+    uart_inst_t *uart = PICO_DEFAULT_UART_INSTANCE();
+    if (!uart_is_writable(uart)) return false;
+    uart_get_hw(uart)->dr = (uint8_t)byte;
+    return true;
+}
+
+static const char *screen_name(ui_screen_t screen) {
+    static const char *const names[] = {
+        "home", "view-menu", "ARAM", "voices", "DSP", "track", "library", "settings",
+        "voice-detail", "volume",
+    };
+    return (unsigned)screen < sizeof(names) / sizeof(names[0]) ? names[screen] : "unknown";
+}
+
+static const char *player_state_name(uint8_t state) {
+    static const char *const names[] = {
+        "idle", "playing", "paused", "fade-pause", "fade-restart", "fade-load", "loading",
+        "fade-in", "error",
+    };
+    return state < sizeof(names) / sizeof(names[0]) ? names[state] : "unknown";
+}
+
+static const char *storage_state_name(storage_state_t state) {
+    static const char *const names[] = {
+        "booting", "scanning", "no-card", "ready", "loading", "empty", "card-error", "read-error",
+    };
+    return (unsigned)state < sizeof(names) / sizeof(names[0]) ? names[state] : "unknown";
+}
+#endif
 
 static ui_rect_t rect_union(ui_rect_t a, ui_rect_t b) {
     const int32_t x0 = a.x < b.x ? a.x : b.x;
@@ -174,6 +215,13 @@ static ui_model_t read_ui_model(const ui_runtime_config_t *config, const board_s
     };
 }
 
+static void queue_aram_map(ui_dirty_queue_t *queue, const ui_t *ui) {
+    if (ui->screen == UI_SCREEN_PLAYER)
+        queue_dirty(queue, (ui_dirty_t){true, false, UI_RECT_PLAYER_ARAM_MAP});
+    else if (ui->screen == UI_SCREEN_ARAM)
+        queue_dirty(queue, (ui_dirty_t){true, false, UI_ARAM_LARGE_MAP});
+}
+
 static void queue_model_changes(ui_dirty_queue_t *queue, const ui_t *ui,
                                 const ui_model_t *old_model, const ui_model_t *new_model) {
     const bool storage_changed =
@@ -193,11 +241,7 @@ static void queue_model_changes(ui_dirty_queue_t *queue, const ui_t *ui,
     }
     if (old_model->generation != new_model->generation ||
         old_model->aram_sequence != new_model->aram_sequence) {
-        if (ui->screen == UI_SCREEN_PLAYER) {
-            queue_dirty(queue, (ui_dirty_t){true, false, UI_RECT_PLAYER_ARAM_MAP});
-        } else if (ui->screen == UI_SCREEN_ARAM) {
-            queue_dirty(queue, (ui_dirty_t){true, false, UI_ARAM_LARGE_MAP});
-        }
+        queue_aram_map(queue, ui);
     }
     if (old_model->paused != new_model->paused || old_model->has_track != new_model->has_track) {
         queue_dirty(queue, (ui_dirty_t){true, false, UI_RECT_PLAY_PAUSE});
@@ -293,13 +337,16 @@ static void start_next_ui_transfer(ui_dirty_queue_t *queue, const ui_t *ui, ui_c
     const bool map_ready = activity_ready || ui_aram_data_ready(ui);
     if (!started) {
         queue_dirty(queue, dirty);
-    } else if (ui->screen == UI_SCREEN_ARAM && map_ready && dirty.rect.x <= UI_ARAM_LARGE_MAP.x &&
-               dirty.rect.y <= UI_ARAM_LARGE_MAP.y &&
+    } else {
+        const ui_rect_t map = ui->screen == UI_SCREEN_PLAYER ? UI_RECT_PLAYER_ARAM_MAP : UI_ARAM_LARGE_MAP;
+        if ((ui->screen == UI_SCREEN_PLAYER || ui->screen == UI_SCREEN_ARAM) && map_ready &&
+               dirty.rect.x <= map.x && dirty.rect.y <= map.y &&
                (int32_t)dirty.rect.x + dirty.rect.width >=
-                   (int32_t)UI_ARAM_LARGE_MAP.x + UI_ARAM_LARGE_MAP.width &&
+                   (int32_t)map.x + map.width &&
                (int32_t)dirty.rect.y + dirty.rect.height >=
-                   (int32_t)UI_ARAM_LARGE_MAP.y + UI_ARAM_LARGE_MAP.height) {
-        display_mark_current_transfer_aram();
+                   (int32_t)map.y + map.height) {
+            display_mark_current_transfer_aram();
+        }
     }
     const uint32_t elapsed_us = time_us_32() - started_us;
     if (elapsed_us > *max_gui_slice_us) {
@@ -342,16 +389,12 @@ _Noreturn void ui_runtime_run(const ui_runtime_config_t *config) {
         .stride_bytes = UI_INDEXED4_STRIDE(UI_WIDTH),
     };
     uint32_t max_gui_slice_us = 0u;
-    uint32_t aram_revision = 0u;
-    aram_view_t ui_aram_view;
     aram_view_init(&ui_aram_view);
-    aram_activity_snapshot_t aram_snapshot = {0};
-    if (aram_activity_acquire(&visuals->activity, &aram_snapshot)) {
-        aram_view_apply(&ui_aram_view, &aram_snapshot);
-        ui_aram_view.sequence = ++aram_revision;
-        aram_activity_release(&visuals->activity, &aram_snapshot);
-    }
-    aram_data_snapshot_t data_snapshot = {0};
+    visual_consumer_t map_consumer;
+    visual_consumer_init(&map_consumer);
+    (void)visual_consumer_poll(&map_consumer, &visuals->activity, &visuals->data,
+                               &ui_aram_view, player_status_read(config->player_status).generation,
+                               0u, true);
     spc_snapshot_t visual_snapshot = {0};
     const spc_snapshot_t *visual_snapshot_ptr =
         spc_snapshot_queue_pop_latest(&visuals->snapshots, &visual_snapshot) ? &visual_snapshot
@@ -370,35 +413,53 @@ _Noreturn void ui_runtime_run(const ui_runtime_config_t *config) {
     uint64_t next_model_update_us = time_us_64() + UI_TIMEBASE_US / model_hz;
     uint32_t model_deadline_remainder = 0u;
     absolute_time_t next_touch_poll = get_absolute_time();
+#if PICO_SPC_UART_PERFORMANCE
+    performance_sample.uptime_ms = time_us_64() / 1000u;
+    performance_sample.audio = i2s_output_get_stats();
+    const display_stats_t initial_display = display_get_stats();
+    performance_sample.display_transfers = initial_display.completed_transfers;
+    performance_sample.map_transfers = initial_display.completed_aram_maps;
+    uart_performance_init(&performance_log, &performance_sample);
+    uint64_t next_performance_us = time_us_64() + 5000000u;
+    uint32_t gui_window_max_us = 0u;
+    uint32_t display_errors = 0u;
+    uint32_t log_format_max_us = 0u;
+    ui_screen_t previous_screen = ui.screen;
+    bool previous_data_mode = ui.aram_data_mode;
+    uint8_t previous_hz = model_hz;
+    uint32_t previous_generation = model.generation;
+    bool mixed_view_window = false;
+    printf("UART PERF every 5s: totals(+interval delta); render_max/buf_min since audio start; "
+           "map_tx counts completed map rectangles in home and ARAM views. TX is nonblocking.\n");
+    printf("MAP due=scheduled opportunities; pub includes forced refreshes; busy/headroom count "
+           "scheduled skips; consume=accepted copied maps; activity/scale maxima reset each report.\n");
+#endif
     while (true) {
         const uint32_t slice_started_us = time_us_32();
         if (display_poll() == DISPLAY_TRANSFER_ERROR) {
+#if PICO_SPC_UART_PERFORMANCE
+            ++display_errors;
+#endif
             queue_dirty(&dirty_queue, (ui_dirty_t){true, true, {0, 0, UI_WIDTH, UI_HEIGHT}});
         }
         storage_poll(storage);
         service_visible_titles(storage, &ui, &dirty_queue);
 
         const uint64_t now_us = time_us_64();
+        const bool new_map = visual_consumer_poll(
+            &map_consumer, &visuals->activity, &visuals->data, &ui_aram_view,
+            player_status_read(config->player_status).generation, ui.aram_mode_request,
+            ui.screen == UI_SCREEN_PLAYER || ui.screen == UI_SCREEN_ARAM);
+        if (new_map) {
+            model.aram_sequence = ui_aram_view.sequence;
+            ui.model.aram_sequence = model.aram_sequence;
+            /* The copied view can change while DMA reads the framebuffer.
+             * Rendering still waits for the transfer to finish. A new track
+             * gets its full redraw when the audio generation reaches the model. */
+            if (ui_aram_view.generation == model.generation)
+                queue_aram_map(&dirty_queue, &ui);
+        }
         if (now_us >= next_model_update_us) {
-            if (aram_activity_acquire(&visuals->activity, &aram_snapshot)) {
-                if (!ui.aram_data_mode) {
-                    aram_view_apply(&ui_aram_view, &aram_snapshot);
-                    ui_aram_view.sequence = ++aram_revision;
-                }
-                aram_activity_release(&visuals->activity, &aram_snapshot);
-            }
-            if (aram_data_acquire(&visuals->data, &data_snapshot)) {
-                const uint32_t current_generation =
-                    player_status_read(config->player_status).generation;
-                if ((ui.screen == UI_SCREEN_PLAYER || ui.screen == UI_SCREEN_ARAM) &&
-                    ui.aram_data_mode &&
-                    data_snapshot.request == ui.aram_mode_request &&
-                    data_snapshot.generation == current_generation) {
-                    aram_view_apply_data(&ui_aram_view, &data_snapshot);
-                    ui_aram_view.sequence = ++aram_revision;
-                }
-                aram_data_release(&visuals->data, &data_snapshot);
-            }
             if (spc_snapshot_queue_pop_latest(&visuals->snapshots, &visual_snapshot)) {
                 visual_snapshot_ptr = &visual_snapshot;
             }
@@ -481,6 +542,60 @@ _Noreturn void ui_runtime_run(const ui_runtime_config_t *config) {
         if (slice_us > max_gui_slice_us) {
             max_gui_slice_us = slice_us;
         }
+#if PICO_SPC_UART_PERFORMANCE
+        if (slice_us > gui_window_max_us) gui_window_max_us = slice_us;
+        if (ui.screen != previous_screen || ui.aram_data_mode != previous_data_mode ||
+            model_hz != previous_hz || model.generation != previous_generation) {
+            mixed_view_window = true;
+            previous_screen = ui.screen;
+            previous_data_mode = ui.aram_data_mode;
+            previous_hz = model_hz;
+            previous_generation = model.generation;
+        }
+        const uint64_t performance_now_us = time_us_64();
+        if (performance_now_us >= next_performance_us) {
+            const display_stats_t transfers = display_get_stats();
+            performance_sample = (uart_performance_sample_t){
+                .uptime_ms = performance_now_us / 1000u,
+                .audio = i2s_output_get_stats(),
+                .visual_drops = visual_snapshot_ptr == NULL ? 0u : visual_snapshot_ptr->dropped_publications,
+                .display_transfers = transfers.completed_transfers,
+                .map_transfers = transfers.completed_aram_maps,
+                .display_errors = display_errors,
+                .gui_max_us = max_gui_slice_us,
+                .gui_window_max_us = gui_window_max_us,
+                .display_last_us = transfers.last_transfer_us,
+                .display_max_us = transfers.max_transfer_us,
+                .log_format_max_us = log_format_max_us,
+                .maps = visual_pipeline_get_stats(visuals),
+                .maps_consumed = map_consumer.consumed,
+                .maps_discarded = map_consumer.discarded,
+                .activity_window_max_us = map_consumer.activity_max_us,
+                .scale_window_max_us = aram_view_scale_max_us(),
+                .requested_hz = model_hz,
+                .audio_ready = atomic_load_explicit(config->audio_ready, memory_order_acquire),
+                .data_mode = ui.aram_data_mode,
+                .mixed_view_window = mixed_view_window,
+                .screen = screen_name(ui.screen),
+                .player_state = player_state_name(model.player_mode),
+                .storage_state = storage_state_name(storage->state),
+                .source = model.source_file,
+                .storage_error = storage->error,
+                .snapshot = visual_snapshot_ptr,
+            };
+            const uint32_t format_started_us = time_us_32();
+            if (uart_performance_report(&performance_log, &performance_sample)) {
+                gui_window_max_us = 0u;
+                mixed_view_window = false;
+                map_consumer.activity_max_us = 0u;
+                aram_view_reset_scale_max();
+            }
+            const uint32_t format_us = time_us_32() - format_started_us;
+            if (format_us > log_format_max_us) log_format_max_us = format_us;
+            next_performance_us = performance_now_us + 5000000u;
+        }
+        (void)uart_performance_poll(&performance_log, try_uart_byte, NULL, 8u);
+#endif
         if (!display_transfer_active() && dirty_queue.count == 0u) {
             sleep_ms(1u);
         } else {

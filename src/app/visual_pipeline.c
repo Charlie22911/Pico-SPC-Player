@@ -14,6 +14,10 @@ void visual_pipeline_init(visual_pipeline_t *pipeline, uint8_t initial_hz) {
     pipeline->rate.phase = 0u;
     atomic_init(&pipeline->requested_hz, initial_hz);
     atomic_init(&pipeline->requested_aram_map, 0u);
+    atomic_init(&pipeline->maps_scheduled, 0u);
+    atomic_init(&pipeline->maps_published, 0u);
+    atomic_init(&pipeline->maps_busy, 0u);
+    atomic_init(&pipeline->maps_headroom, 0u);
     pipeline->snapshot_sequence = 0u;
     pipeline->snapshot_drops = 0u;
     pipeline->snapshot_generation = 0u;
@@ -51,6 +55,15 @@ void visual_pipeline_set_requested_hz(visual_pipeline_t *pipeline, uint8_t reque
 
 void visual_pipeline_set_aram_request(visual_pipeline_t *pipeline, uint32_t request) {
     atomic_store_explicit(&pipeline->requested_aram_map, request, memory_order_release);
+}
+
+visual_pipeline_stats_t visual_pipeline_get_stats(const visual_pipeline_t *pipeline) {
+    return (visual_pipeline_stats_t){
+        .scheduled = atomic_load_explicit(&pipeline->maps_scheduled, memory_order_relaxed),
+        .published = atomic_load_explicit(&pipeline->maps_published, memory_order_relaxed),
+        .busy = atomic_load_explicit(&pipeline->maps_busy, memory_order_relaxed),
+        .headroom = atomic_load_explicit(&pipeline->maps_headroom, memory_order_relaxed),
+    };
 }
 
 void visual_pipeline_service(visual_pipeline_t *pipeline, player_t *player,
@@ -94,6 +107,8 @@ void visual_pipeline_service(visual_pipeline_t *pipeline, player_t *player,
     if (!forced && !scheduled) {
         return;
     }
+    if (scheduled)
+        atomic_fetch_add_explicit(&pipeline->maps_scheduled, 1u, memory_order_relaxed);
 
     bool map_published = false;
     if (data_mode) {
@@ -109,14 +124,21 @@ void visual_pipeline_service(visual_pipeline_t *pipeline, player_t *player,
                 } else {
                     aram_data_cancel_write(&pipeline->data);
                 }
+            } else if (scheduled) {
+                atomic_fetch_add_explicit(&pipeline->maps_busy, 1u, memory_order_relaxed);
             }
+        } else if (scheduled) {
+            atomic_fetch_add_explicit(&pipeline->maps_headroom, 1u, memory_order_relaxed);
         }
-    } else if (aram_activity_publish(&pipeline->activity)) {
+    } else if (aram_activity_publish_request(&pipeline->activity, request)) {
         visual_pipeline_bind_backend(pipeline, player->backend);
         map_published = true;
+    } else if (scheduled) {
+        atomic_fetch_add_explicit(&pipeline->maps_busy, 1u, memory_order_relaxed);
     }
 
     if (map_published) {
+        atomic_fetch_add_explicit(&pipeline->maps_published, 1u, memory_order_relaxed);
         pipeline->published_map_request = request;
         pipeline->published_map_generation = player->generation;
     }

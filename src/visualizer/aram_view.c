@@ -2,6 +2,13 @@
 
 #include <stddef.h>
 #include <string.h>
+#if PICO_SPC_UART_PERFORMANCE
+#include "pico/time.h"
+static uint32_t scale_max_us;
+#endif
+
+static uint8_t pair_colors[64], pair_keep[64], pair_fade[256];
+static bool activity_tables_ready;
 
 static uint8_t activity_color(uint8_t activity) {
     static const uint8_t colors[8] = {
@@ -14,6 +21,21 @@ static uint8_t fade_color(uint8_t color) {
     if (color == UI_COLOR_INACTIVE)
         return UI_COLOR_INACTIVE;
     return color == 15u ? UI_COLOR_INACTIVE : 15u;
+}
+
+static void prepare_activity_tables(void) {
+    if (activity_tables_ready) return;
+    for (unsigned code = 0u; code < 64u; ++code) {
+        const unsigned left = (code & 1u) | ((code >> 1u) & 2u) | ((code >> 2u) & 4u);
+        const unsigned right = ((code >> 1u) & 1u) | ((code >> 2u) & 2u) | ((code >> 3u) & 4u);
+        pair_colors[code] = (uint8_t)((left ? (unsigned)activity_color((uint8_t)left) << 4u : 0u) |
+                                      (right ? (unsigned)activity_color((uint8_t)right) : 0u));
+        pair_keep[code] = (uint8_t)((left ? 0u : 0xf0u) | (right ? 0u : 0x0fu));
+    }
+    for (unsigned old = 0u; old < 256u; ++old)
+        pair_fade[old] = (uint8_t)(fade_color((uint8_t)(old >> 4u)) << 4u |
+                                  fade_color((uint8_t)(old & 15u)));
+    activity_tables_ready = true;
 }
 
 void aram_view_init(aram_view_t *view) {
@@ -29,24 +51,29 @@ void aram_view_apply(aram_view_t *view, const aram_activity_snapshot_t *snapshot
     if (!view->valid || view->generation != snapshot->generation) {
         memset(view->pixels, 0xaa, sizeof(view->pixels));
     }
-    for (uint32_t address = 0u; address < ARAM_ACTIVITY_ADDRESS_COUNT; address += 2u) {
-        uint8_t packed = 0u;
-        for (uint32_t offset = 0u; offset < 2u; ++offset) {
-            const uint16_t at = (uint16_t)(address + offset);
-            const uint8_t activity =
-                (uint8_t)(aram_activity_test_bit(snapshot->read, at) ? 1u : 0u) |
-                (uint8_t)(aram_activity_test_bit(snapshot->write, at) ? 2u : 0u) |
-                (uint8_t)(aram_activity_test_bit(snapshot->execute, at) ? 4u : 0u);
-            const uint8_t old = (offset == 0u) ? (uint8_t)(view->pixels[address >> 1u] >> 4u)
-                                               : (uint8_t)(view->pixels[address >> 1u] & 0x0fu);
-            const uint8_t color = activity != 0u ? activity_color(activity) : fade_color(old);
-            packed |= offset == 0u ? (uint8_t)(color << 4u) : color;
+    prepare_activity_tables();
+    const uint8_t *read = snapshot->read, *write = snapshot->write, *execute = snapshot->execute;
+    uint8_t *destination = view->pixels;
+    for (uint32_t byte = 0u; byte < ARAM_ACTIVITY_BITMAP_BYTES; ++byte, destination += 4u) {
+        unsigned r = read[byte], w = write[byte], e = execute[byte];
+        if ((r | w | e) == 0u) {
+            uint32_t old;
+            memcpy(&old, destination, sizeof(old));
+            if (old != 0xaaaaaaaau)
+                for (unsigned pair = 0u; pair < 4u; ++pair)
+                    destination[pair] = pair_fade[destination[pair]];
+            continue;
         }
-        view->pixels[address >> 1u] = packed;
+        for (unsigned pair = 0u; pair < 4u; ++pair) {
+            const unsigned code = (r & 3u) | ((w & 3u) << 2u) | ((e & 3u) << 4u);
+            destination[pair] = (uint8_t)((pair_fade[destination[pair]] & pair_keep[code]) |
+                                          pair_colors[code]);
+            r >>= 2u; w >>= 2u; e >>= 2u;
+        }
     }
     view->generation = snapshot->generation;
     view->sequence = snapshot->sequence;
-    view->request = 0u;
+    view->request = snapshot->request;
     view->kind = ARAM_VIEW_ACTIVITY;
     view->valid = true;
 }
@@ -122,14 +149,23 @@ void aram_view_blit_scaled(const aram_view_t *view, ui_canvas_t *canvas, ui_rect
         destination.height <= 0 || (destination.x & 1) != 0 || (destination.width & 1) != 0)
         return;
 
-    static uint16_t large_x_map[422];
-    static uint16_t large_y_map[310];
+#if PICO_SPC_UART_PERFORMANCE
+    const uint32_t started_us = time_us_32();
+#endif
+    typedef struct { uint8_t byte0, byte1, shift0, shift1; } scale_pair_t;
+    static scale_pair_t large_pairs[211];
+    static uint8_t large_y_map[310];
     static bool large_maps_ready;
     if (!large_maps_ready) {
-        for (uint16_t x = 0u; x < 422u; ++x)
-            large_x_map[x] = (uint16_t)((uint32_t)x * ARAM_VIEW_WIDTH / 422u);
+        for (uint16_t pair = 0u; pair < 211u; ++pair) {
+            const unsigned x0 = (unsigned)pair * 2u * ARAM_VIEW_WIDTH / 422u;
+            const unsigned x1 = ((unsigned)pair * 2u + 1u) * ARAM_VIEW_WIDTH / 422u;
+            large_pairs[pair] = (scale_pair_t){(uint8_t)(x0 / 2u), (uint8_t)(x1 / 2u),
+                                              (uint8_t)((x0 & 1u) ? 0u : 4u),
+                                              (uint8_t)((x1 & 1u) ? 0u : 4u)};
+        }
         for (uint16_t y = 0u; y < 310u; ++y)
-            large_y_map[y] = (uint16_t)((uint32_t)y * ARAM_VIEW_HEIGHT / 310u);
+            large_y_map[y] = (uint8_t)((uint32_t)y * ARAM_VIEW_HEIGHT / 310u);
         large_maps_ready = true;
     }
 
@@ -163,25 +199,58 @@ void aram_view_blit_scaled(const aram_view_t *view, ui_canvas_t *canvas, ui_rect
         return;
 
     const bool large = destination.width == 422 && destination.height == 310;
+    uint8_t *row = canvas->pixels + (size_t)y0 * canvas->stride_bytes + (size_t)x0 / 2u;
+    const uint16_t stride = canvas->stride_bytes;
+    const unsigned pairs = (unsigned)(x1 - x0) / 2u;
+    const unsigned dx0 = (unsigned)(x0 - destination.x);
+    unsigned previous_sy = UINT32_MAX;
     for (int32_t y = y0; y < y1; ++y) {
         const uint32_t dy = (uint32_t)(y - destination.y);
-        const uint16_t sy = large
+        const unsigned sy = large
                                 ? large_y_map[dy]
                                 : (uint16_t)(dy * ARAM_VIEW_HEIGHT / (uint16_t)destination.height);
-        for (int32_t x = x0; x < x1; x += 2) {
-            const uint32_t dx = (uint32_t)(x - destination.x);
-            const uint16_t sx0 =
-                large ? large_x_map[dx]
-                      : (uint16_t)(dx * ARAM_VIEW_WIDTH / (uint16_t)destination.width);
-            const uint16_t sx1 =
-                large ? large_x_map[dx + 1u]
-                      : (uint16_t)((dx + 1u) * ARAM_VIEW_WIDTH / (uint16_t)destination.width);
-            const uint8_t left =
-                aram_view_pixel(view, (uint16_t)((uint32_t)sy * ARAM_VIEW_WIDTH + sx0));
-            const uint8_t right =
-                aram_view_pixel(view, (uint16_t)((uint32_t)sy * ARAM_VIEW_WIDTH + sx1));
-            canvas->pixels[(size_t)y * canvas->stride_bytes + (size_t)x / 2u] =
-                (uint8_t)(left << 4u | right);
+        if (large && sy == previous_sy) {
+            memcpy(row, row - stride, pairs);
+        } else {
+            const uint8_t *source = view->pixels + sy * ARAM_VIEW_STRIDE;
+            if (large) {
+                const scale_pair_t *mapping = large_pairs + dx0 / 2u;
+                for (unsigned pair = 0u; pair < pairs; ++pair) {
+                    const scale_pair_t at = mapping[pair];
+                    const unsigned left = (unsigned)source[at.byte0] >> at.shift0;
+                    const unsigned right = (unsigned)source[at.byte1] >> at.shift1;
+                    row[pair] = (uint8_t)((left << 4u) | (right & 15u));
+                }
+            } else {
+                for (unsigned pair = 0u; pair < pairs; ++pair) {
+                    const unsigned dx = dx0 + pair * 2u;
+                    const unsigned sx0 = dx * ARAM_VIEW_WIDTH / (uint16_t)destination.width;
+                    const unsigned sx1 = (dx + 1u) * ARAM_VIEW_WIDTH / (uint16_t)destination.width;
+                    const unsigned left = (unsigned)source[sx0 / 2u] >> ((sx0 & 1u) ? 0u : 4u);
+                    const unsigned right = (unsigned)source[sx1 / 2u] >> ((sx1 & 1u) ? 0u : 4u);
+                    row[pair] = (uint8_t)((left << 4u) | (right & 15u));
+                }
+            }
         }
+        previous_sy = sy;
+        row += stride;
     }
+#if PICO_SPC_UART_PERFORMANCE
+    const uint32_t elapsed = time_us_32() - started_us;
+    if (elapsed > scale_max_us) scale_max_us = elapsed;
+#endif
+}
+
+uint32_t aram_view_scale_max_us(void) {
+#if PICO_SPC_UART_PERFORMANCE
+    return scale_max_us;
+#else
+    return 0u;
+#endif
+}
+
+void aram_view_reset_scale_max(void) {
+#if PICO_SPC_UART_PERFORMANCE
+    scale_max_us = 0u;
+#endif
 }

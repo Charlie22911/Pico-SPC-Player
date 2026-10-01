@@ -8,6 +8,7 @@
 | `src/audio/` | PCM format, buffering, and I2S output |
 | `src/board/` | RP2350 board initialization and hardware policy |
 | `src/display/` | AMOLED transport and indexed-pixel expansion |
+| `src/diagnostics/` | Nonblocking UART performance reports |
 | `src/player/` | Playback state, fades, and commands |
 | `src/spc/` | SPC parsing, metadata, emulator backend, and snapshots |
 | `src/storage/` | FAT mounting, catalog scanning, and track staging |
@@ -61,7 +62,8 @@ detected for future uses but is absent from the audio, emulator, and framebuffer
 | I2S pins and DMA/PIO behavior | `src/audio/i2s_output.c`, `src/audio/i2s_tx.pio` |
 | SD pins or card protocol | `src/storage/sd_card.c` |
 | Folder, track, path, or image limits | `src/storage/spc_catalog.h` |
-| Cross-core UI and visual coordination | `src/app/ui_runtime.*`, `src/app/visual_pipeline.*` |
+| Cross-core UI and visual coordination | `src/app/ui_runtime.*`, `src/app/visual_pipeline.*`, `src/app/visual_consumer.*` |
+| Startup clocks and periodic performance logging | `src/board/board.*`, `src/diagnostics/uart_performance.*` |
 | Player commands or fade state | `src/player/player_commands.*`, `src/player/player.*` |
 | AMOLED palette expansion and transfer timing | `src/display/display.*` |
 | Vendored integration | Component under `third_party/`, then `third_party/manifest.json` and `NOTICE.md` |

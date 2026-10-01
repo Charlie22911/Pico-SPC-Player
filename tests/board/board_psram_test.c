@@ -9,6 +9,7 @@ typedef struct fake_memory {
     size_t physical_size;
     bool fail_reads;
     bool fail_writes;
+    bool corrupt_adjacent_word;
 } fake_memory_t;
 
 static int failures;
@@ -57,6 +58,9 @@ static bool fake_write(void *context, size_t offset, uint32_t value) {
         return false;
     }
     memcpy(memory->bytes + physical_offset, &value, sizeof(value));
+    if (memory->corrupt_adjacent_word && physical_offset == sizeof(uint32_t)) {
+        memory->bytes[physical_offset] ^= 0x80u;
+    }
     return true;
 }
 
@@ -95,20 +99,23 @@ static void test_validation_accepts_distinct_memory_and_restores_words(void) {
         return;
     }
     memset(memory.bytes, 0xa5, memory.physical_size);
-    uint32_t before[3];
-    memcpy(&before[0], memory.bytes, sizeof(before[0]));
-    memcpy(&before[1], memory.bytes + 1024u * 1024u, sizeof(before[1]));
-    memcpy(&before[2], memory.bytes + memory.physical_size - sizeof(uint32_t), sizeof(before[2]));
+    uint8_t *before = malloc(memory.physical_size);
+    if (before == NULL) {
+        free(memory.bytes);
+        ++failures;
+        return;
+    }
+    for (size_t i = 0u; i < memory.physical_size; ++i) {
+        memory.bytes[i] = (uint8_t)(i * 31u + (i >> 8u));
+    }
+    memcpy(before, memory.bytes, memory.physical_size);
 
     board_psram_access_t access = access_for(&memory);
     expect_true("2 MiB validation",
                 board_psram_validate_memory(&access, BOARD_PSRAM_CAPACITY_LIMIT_BYTES));
 
-    uint32_t after[3];
-    memcpy(&after[0], memory.bytes, sizeof(after[0]));
-    memcpy(&after[1], memory.bytes + 1024u * 1024u, sizeof(after[1]));
-    memcpy(&after[2], memory.bytes + memory.physical_size - sizeof(uint32_t), sizeof(after[2]));
-    expect_true("validation restores sampled words", memcmp(before, after, sizeof(before)) == 0);
+    expect_true("validation restores every byte", memcmp(before, memory.bytes, memory.physical_size) == 0);
+    free(before);
     free(memory.bytes);
 }
 
@@ -125,6 +132,22 @@ static void test_validation_rejects_aliasing_memory(void) {
     board_psram_access_t access = access_for(&memory);
     expect_false("1 MiB aliases inside claimed 2 MiB",
                  board_psram_validate_memory(&access, BOARD_PSRAM_CAPACITY_LIMIT_BYTES));
+    free(memory.bytes);
+}
+
+static void test_validation_rejects_adjacent_word_corruption(void) {
+    fake_memory_t memory = {
+        .bytes = calloc(1u, BOARD_PSRAM_CAPACITY_LIMIT_BYTES),
+        .physical_size = BOARD_PSRAM_CAPACITY_LIMIT_BYTES,
+        .corrupt_adjacent_word = true,
+    };
+    if (memory.bytes == NULL) {
+        ++failures;
+        return;
+    }
+    board_psram_access_t access = access_for(&memory);
+    expect_false("adjacent word corruption",
+                 board_psram_validate_memory(&access, memory.physical_size));
     free(memory.bytes);
 }
 
@@ -152,6 +175,7 @@ int main(void) {
     test_one_mib_capacity_remains_one_mib();
     test_validation_accepts_distinct_memory_and_restores_words();
     test_validation_rejects_aliasing_memory();
+    test_validation_rejects_adjacent_word_corruption();
     test_validation_rejects_invalid_or_failed_access();
 
     if (failures != 0) {

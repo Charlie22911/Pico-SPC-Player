@@ -44,11 +44,11 @@
       "commit": "813e35c75544e116bd1541e1dd09e0d9cba484f6",
       "license": "MIT-style Waveshare notice",
       "localPath": "third_party/waveshare",
-      "localModifications": "Integrated with Core 1 display ownership, asynchronous DMA transfer, and indexed-palette expansion.",
+      "localModifications": "Integrated with Core 1 display ownership, asynchronous DMA transfer, and indexed-palette expansion; initialize UART after the final peripheral clock configuration.",
       "files": {
         "amoled/AMOLED_2in41.c": "6de2be6b1143fc3bcb38bfb05e73419c2499f65fa772d9b1c3bf67b75c675fd0",
         "amoled/AMOLED_2in41.h": "07ad418affc7941d25dfb6bf6baa24c935cf73b822c3b6e23296c58b8b85e875",
-        "board/DEV_Config.c": "fc65daa855c80eca6c7aa93c19330724067f9a37b1130303e40fde28edd55ea2",
+        "board/DEV_Config.c": "5511d43800dd0c8626901d074054ea5258c86f02ecca06d824065ea3d3b381f2",
         "board/DEV_Config.h": "d8dfb1e414565d84b54ec26cfc14e33be641846f1ddb929864cb763e77a43f47",
         "qspi/qspi_pio.c": "fd169f86fd52a9c44c1edff16c69b06d7b630cabf74a0f79ea396b0886ba4f9e",
         "qspi/qspi_pio.h": "ffb3c79558dfe2dda91145a04954c421aac56c99b6fa1fb06edcce70e2b70d93",

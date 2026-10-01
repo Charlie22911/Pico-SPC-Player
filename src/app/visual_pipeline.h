@@ -6,6 +6,7 @@
 #include <stdatomic.h>
 
 #include "audio/pcm_queue.h"
+#include "app/visual_stats.h"
 #include "player/player.h"
 #include "spc/spc_snapshot_queue.h"
 #include "visualizer/aram_activity.h"
@@ -21,6 +22,10 @@ typedef struct {
     visual_rate_t rate;
     _Atomic uint32_t requested_hz;
     _Atomic uint32_t requested_aram_map;
+    _Atomic uint32_t maps_scheduled;
+    _Atomic uint32_t maps_published;
+    _Atomic uint32_t maps_busy;
+    _Atomic uint32_t maps_headroom;
     uint32_t snapshot_sequence;
     uint32_t snapshot_drops;
     uint32_t snapshot_generation;
@@ -47,5 +52,9 @@ void visual_pipeline_set_requested_hz(visual_pipeline_t *pipeline, uint8_t reque
 
 /* Updates the opaque ARAM mode request token without blocking. Bit zero selects Data mode. */
 void visual_pipeline_set_aram_request(visual_pipeline_t *pipeline, uint32_t request);
+/* Monotonic diagnostic totals, sampled atomically across the two cores.
+ * Published includes forced mode/track refreshes; skip counters count only
+ * scheduled attempts, so retries during an idle loop cannot inflate them. */
+visual_pipeline_stats_t visual_pipeline_get_stats(const visual_pipeline_t *pipeline);
 
 #endif

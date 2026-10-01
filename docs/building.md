@@ -49,7 +49,18 @@ The DSP loop and SPC interpreter execute from internal SRAM by default.
 The SDK copies their code from flash at boot. Configure with
 `-DPICO_SPC_EMULATOR_IN_SRAM=OFF` to keep these functions in flash. Host builds
 use their normal code placement. See [the Arm optimization results](aram-optimization-build.md)
-for the Data recording, display palette, and SRAM placement changes and results.
+for the rendering, scheduling, display palette, and SRAM placement changes and results.
+
+## Clock configuration
+
+The release configures both system and peripheral clocks to 250 MHz. Flash uses divider 2
+for 125 MHz; PSRAM uses divider 3 for approximately 83.33 MHz in linear mode. The display's
+PIO clock divider is 1, with two instruction cycles per serial clock, giving 125 MHz.
+PSRAM is checked at startup but is not used for runtime audio or ARAM-map storage.
+
+Startup diagnostics report the requested clocks, SDK values, measurements against the
+12 MHz reference clock, and QMI timing registers. Playback starts only after the system,
+peripheral, and flash clock checks pass.
 
 ## Optional private embedded track
 
@@ -75,8 +86,13 @@ download SPC files. SPC and WAV files are ignored by Git.
 
 ## Serial log
 
-UART logging is enabled and USB logging is disabled. UART0 uses GP0 for TX and GP1 for RX at the
-Pico SDK default baud rate of 115200. Connect a 3.3 V USB-to-UART adapter with a shared ground.
+UART logging is enabled and USB logging is disabled. UART0 uses GP0 for TX and GP1 for RX
+at 115200 baud, 8 data bits, no parity, and 1 stop bit. Connect a 3.3 V USB-to-UART adapter
+with a shared ground. UART is initialized after the final peripheral clock configuration.
+
+The release prints startup checks and performance reports every five seconds. See
+[UART diagnostics](uart-diagnostics.md) for the fields and comparison guidance. Configure
+with `-DPICO_SPC_UART_PERFORMANCE=OFF` to disable the periodic reports; startup checks remain.
 
 ## Clean reconfiguration
 

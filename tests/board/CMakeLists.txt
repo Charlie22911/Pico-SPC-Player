@@ -18,3 +18,12 @@ endif()
 
 enable_testing()
 add_test(NAME board_psram_test COMMAND board_psram_test)
+
+add_executable(board_clock_test board_clock_test.c ../../src/board/clock_validation.c)
+target_include_directories(board_clock_test PRIVATE ../../src/board)
+if(MSVC)
+    target_compile_options(board_clock_test PRIVATE /W4 /WX /UNDEBUG)
+else()
+    target_compile_options(board_clock_test PRIVATE -Wall -Wextra -Werror -Wpedantic -UNDEBUG)
+endif()
+add_test(NAME board_clock_test COMMAND board_clock_test)

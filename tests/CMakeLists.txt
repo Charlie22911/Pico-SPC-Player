@@ -5,6 +5,23 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_testing()
+add_executable(visual_consumer_test visual_consumer_test.c
+    ../src/app/visual_consumer.c ../src/visualizer/aram_activity.c
+    ../src/visualizer/aram_data.c ../src/visualizer/aram_view.c)
+target_include_directories(visual_consumer_test PRIVATE ../src)
+target_compile_options(visual_consumer_test PRIVATE -Wall -Wextra -Werror -Wshadow -UNDEBUG)
+add_test(NAME visual_consumer COMMAND visual_consumer_test)
+add_executable(aram_render_test aram_render_test.c aram_render_reference.c
+    ../src/visualizer/aram_view.c)
+target_include_directories(aram_render_test PRIVATE ../src)
+target_compile_options(aram_render_test PRIVATE -Wall -Wextra -Werror -Wshadow -UNDEBUG)
+add_test(NAME aram_render_equivalence COMMAND aram_render_test)
+add_executable(uart_performance_test uart_performance_test.c
+    ../src/diagnostics/uart_performance.c)
+target_include_directories(uart_performance_test PRIVATE ../src)
+target_compile_options(uart_performance_test PRIVATE
+    -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
+add_test(NAME uart_performance COMMAND uart_performance_test)
 option(ENABLE_SANITIZERS "Enable address/undefined sanitizers on host" OFF)
 add_executable(audio_test audio_test.c
     ../src/audio/audio_status_queue.c ../src/audio/pcm_queue.c
@@ -13,6 +30,12 @@ add_executable(audio_test audio_test.c
 target_include_directories(audio_test PRIVATE ../src)
 target_compile_options(audio_test PRIVATE -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
 if(ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(visual_consumer_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(visual_consumer_test PRIVATE -fsanitize=address,undefined)
+    target_compile_options(aram_render_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(aram_render_test PRIVATE -fsanitize=address,undefined)
+    target_compile_options(uart_performance_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(uart_performance_test PRIVATE -fsanitize=address,undefined)
     target_compile_options(audio_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
     target_link_options(audio_test PRIVATE -fsanitize=address,undefined)
 endif()
@@ -63,6 +86,7 @@ add_test(NAME display_palette COMMAND display_palette_test)
 
 add_executable(visual_pipeline_test visual_pipeline_test.c
     ../src/app/visual_pipeline.c
+    ../src/app/visual_consumer.c ../src/visualizer/aram_view.c
     ../src/audio/pcm_queue.c
     ../src/spc/spc_snapshot.c
     ../src/visualizer/aram_activity.c
@@ -72,6 +96,12 @@ target_include_directories(visual_pipeline_test PRIVATE
     ../src ../src/audio ../src/player ../src/spc)
 target_compile_options(visual_pipeline_test PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wshadow -UNDEBUG)
+if(ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(visual_pipeline_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer -Wno-conversion)
+    target_link_options(visual_pipeline_test PRIVATE -fsanitize=address,undefined)
+    # Sanitizer instrumentation triggers conversion warnings in the existing
+    # snapshot builder. Other unsanitized targets retain the strict checks.
+endif()
 add_test(NAME visual_pipeline_data_voice_snapshots COMMAND visual_pipeline_test)
 
 add_executable(storage_test storage_test.c

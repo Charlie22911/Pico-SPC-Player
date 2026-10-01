@@ -23,6 +23,7 @@ Supported firmware releases target the RP2350's Arm Cortex-M33 cores at 250 MHz.
 - 450x600 touch UI stored as a 4-bit indexed framebuffer in internal SRAM
 - Full-address ARAM Activity and byte-value Data heatmap views
 - Live voice summaries, voice details, DSP registers, echo state, and diagnostics
+- Measured startup clocks and five-second performance reports over UART
 
 ## Required hardware
 
@@ -81,7 +82,8 @@ cmake --build build-embedded --target pico_spc_player
 
 - [Building and flashing](docs/building.md)
 - [Changelog](CHANGELOG.md)
-- [Arm Data-view optimization results](docs/aram-optimization-build.md)
+- [Arm ARAM optimization results](docs/aram-optimization-build.md)
+- [UART diagnostics](docs/uart-diagnostics.md)
 - [Hardware and wiring](docs/hardware.md)
 - [User guide](docs/user-guide.md)
 - [SNES audio and SPC file overview](docs/snes-audio.md)

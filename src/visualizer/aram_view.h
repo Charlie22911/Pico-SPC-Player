@@ -33,5 +33,8 @@ void aram_view_invalidate(aram_view_t *view);
 uint8_t aram_view_pixel(const aram_view_t *view, uint16_t address);
 void aram_view_blit(const aram_view_t *view, ui_canvas_t *canvas, int16_t x, int16_t y);
 void aram_view_blit_scaled(const aram_view_t *view, ui_canvas_t *canvas, ui_rect_t destination);
+/* Core 1 owns this maximum; reset after an accepted UART reporting window. */
+uint32_t aram_view_scale_max_us(void);
+void aram_view_reset_scale_max(void);
 
 #endif
