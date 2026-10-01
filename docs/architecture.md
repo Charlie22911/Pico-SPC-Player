@@ -48,8 +48,8 @@ late Activity/Data result or a previous track's result from being displayed.
 
 The UI framebuffer stores two 4-bit palette indexes per byte, requiring 135 KiB for 450x600
 pixels. The display module expands indexed pairs through 256-entry RGB565 lookup tables into two
-small scanline buffers. DMA and PIO transmit one buffer while Core 1 prepares the next. PSRAM is
-detected for future uses but is absent from the audio, emulator, and framebuffer paths.
+small scanline buffers. DMA and PIO transmit one buffer while Core 1 prepares the next. Startup
+checks detect and validate PSRAM. Audio, emulator state, and the framebuffer use internal SRAM.
 
 ## Where to make common changes
 

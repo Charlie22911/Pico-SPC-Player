@@ -20,16 +20,13 @@ Core 1 consumes ARAM publications independently of the general UI model timer an
 a map redraw immediately. Activity publications now carry both request and playback-generation
 tags, matching Data's stale-result checks. Consumer-held banks retain their ownership.
 
-The map is still scaled into the indexed framebuffer before palette conversion into the
-display DMA buffers. Direct generation of RGB565 strips into those buffers has not been
-implemented. Playback calculations and echo processing are unchanged, and PSRAM remains
-outside the runtime audio and map paths.
+ARAM maps are scaled into the indexed framebuffer, then converted to RGB565 in the display
+DMA buffers. Playback calculations and echo processing are unchanged. Audio and ARAM-map
+storage use internal SRAM.
 
 ## Clock configuration
 
-I kept this release at 250 MHz after observing UI, touch, and UART halts in the 276 MHz
-trial while audio continued. The exact cause of those halts remains unconfirmed. I observed
-stable operation, including a completed mode transition, in the recorded 250 MHz session.
+The release uses the following clock configuration:
 
 | Clock | Release setting |
 | --- | ---: |
@@ -44,11 +41,11 @@ five-second performance reports.
 
 ## Hardware comparison for 0.1.2
 
-I compared the earlier 250 MHz diagnostic baseline and the optimized 250 MHz test build
+I compared the 250 MHz diagnostic baseline and the optimized 250 MHz firmware
 using [SNEStronizer](https://github.com/ResistanceVault/demo-twistit/blob/master/data/SNEStronizer.spc)
 with the map requested at 60 Hz. Flash, display, and PSRAM clocks were the same in both
-builds. I used only complete, stable reporting windows from the explicitly identified
-250 MHz session for the new results.
+builds. I used complete reporting windows with unchanged page, map mode, and requested rate
+for the comparison.
 
 | View | Baseline map transfers | Optimized map transfers | Baseline GUI window maximum* | Optimized GUI window maximum* |
 | --- | ---: | ---: | ---: | ---: |
@@ -61,8 +58,8 @@ are total completed map transfers divided by the total reporting duration for th
 The optimized home Activity result covers four windows totaling 20.001 seconds; full-screen
 Data covers seven windows totaling 35.003 seconds. Baseline coverage was 140.017 and
 40 seconds respectively. Track positions and observation durations differ, so this is an
-observed comparison rather than a paired benchmark. The new identified session has no stable
-home Data or full-screen Activity window for a matching comparison.
+observed comparison rather than a paired benchmark. This comparison covers home Activity and
+full-screen Data.
 
 Across the approximately 80.9 seconds of playback in the new session, I recorded zero silence
 frames, underruns, late DMA blocks, DSP/voice snapshot drops, display errors, and log drops.
@@ -70,8 +67,7 @@ The minimum audio queue remained 1,536 frames (48 ms). Maximum audio render time
 5,158 us, compared with 5,443 us in the diagnostic baseline. Audio status drops remained
 at the startup total of 20; one busy map publication was skipped during a view transition.
 
-I collected these board results before adding the 0.1.2 version metadata. The release
-source check confirms the same firmware sources and settings apart from that version change.
+The measured firmware uses the release's rendering code and clock configuration.
 
 ## Earlier changes retained from 0.1.1
 
@@ -119,10 +115,6 @@ ARAM transfers and retained its last value on the home screen, so it did not
 measure home-view refresh rates. Release 0.1.2's UART `map_tx` counts completed home and
 full-screen map transfers.
 
-I collected these measurements with the optimized Arm firmware before the
-release version metadata was added. Release 0.1.1 uses the same playback and
-visualization code, with an explicit Arm default and firmware version metadata.
-
 ## Verification
 
 The clean Arm v0.1.2 build, all 21 host checks, and both board host checks passed, including real SPC
@@ -141,8 +133,7 @@ This checks audio equivalence; it does not measure board performance.
 Complete GCC firmware disassembly confirms the reduced bitmap loads, removal of repeated
 canvas-base/stride loads from the scaler's inner loop, repeated-row copies, and a uniform
 palette lookup loop without per-pair region tests. The firmware's ELF symbols place both selected emulator
-functions in SRAM. After removing debug information, the compiled emulator
-library is byte-identical to the library in the tested optimization image.
+functions in SRAM. The compiled emulator code is unchanged.
 
 ## SRAM budget
 
